@@ -159,6 +159,9 @@ struct GeneralSettings: View {
                     Text("Show menu bar icon")
                 }
                 .tint(.effectiveAccent)
+                Defaults.Toggle(key: .menuBarOverflow) {
+                    Text("Show menu bar icons hidden by the notch")
+                }
                 LaunchAtLogin.Toggle("Launch at login")
                 Defaults.Toggle(key: .showOnAllDisplays) {
                     Text("Show on all displays")

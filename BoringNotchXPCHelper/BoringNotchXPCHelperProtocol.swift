@@ -20,6 +20,11 @@ import Foundation
     func isScreenBrightnessAvailable(with reply: @escaping (Bool) -> Void)
     func currentScreenBrightness(with reply: @escaping (NSNumber?) -> Void)
     func setScreenBrightness(_ value: Float, with reply: @escaping (Bool) -> Void)
+    // Perch: menu bar items of other apps, read via Accessibility (performed by the helper)
+    /// Replies with a JSON array of `{pid, index, title, x, y, width, height}` (top-left global coordinates).
+    func menuBarItems(with reply: @escaping (Data?) -> Void)
+    /// Performs AXPress on the `index`-th menu bar item of the app with `pid`.
+    func pressMenuBarItem(_ pid: Int32, index: Int, with reply: @escaping (Bool) -> Void)
 }
 
 /*

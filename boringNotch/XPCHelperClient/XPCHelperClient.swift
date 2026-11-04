@@ -241,6 +241,39 @@ final class XPCHelperClient: NSObject {
             return false
         }
     }
+
+    // MARK: - Menu Bar Items (Perch)
+
+    /// Raw JSON from the helper, or nil when Accessibility isn't granted.
+    nonisolated func menuBarItemsData() async -> Data? {
+        do {
+            let service = await MainActor.run {
+                ensureRemoteService()
+            }
+            return try await service.withContinuation { service, continuation in
+                service.menuBarItems { data in
+                    continuation.resume(returning: data)
+                }
+            }
+        } catch {
+            return nil
+        }
+    }
+
+    nonisolated func pressMenuBarItem(pid: Int32, index: Int) async -> Bool {
+        do {
+            let service = await MainActor.run {
+                ensureRemoteService()
+            }
+            return try await service.withContinuation { service, continuation in
+                service.pressMenuBarItem(pid, index: index) { success in
+                    continuation.resume(returning: success)
+                }
+            }
+        } catch {
+            return false
+        }
+    }
 }
 
 extension Notification.Name {

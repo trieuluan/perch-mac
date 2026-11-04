@@ -352,6 +352,8 @@ struct ContentView: View {
                         NotchHomeView(albumArtNamespace: albumArtNamespace)
                     case .shelf:
                         ShelfView()
+                    case .menuBar:
+                        MenuBarOverflowView()
                     }
                 }
                 .transition(
