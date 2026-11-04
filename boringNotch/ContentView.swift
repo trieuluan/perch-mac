@@ -456,11 +456,7 @@ struct ContentView: View {
             HStack {
                 if useMusicVisualizer {
                     Rectangle()
-                        .fill(
-                            Defaults[.coloredSpectrogram]
-                                ? Color(nsColor: musicManager.avgColor).gradient
-                                : Color.gray.gradient
-                        )
+                        .fill(VisualizerPalette.vertical(albumArt: musicManager.avgColor)) // Perch: shared palette
                         .frame(width: 50, alignment: .center)
                         .matchedGeometryEffect(id: "spectrum", in: albumArtNamespace)
                         .mask {

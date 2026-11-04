@@ -280,6 +280,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        MenuBarVisualizer.shared.setup() // Perch
+        MenuBarOverlayController.shared.setup() // Perch
 
         NotificationCenter.default.addObserver(
             self,

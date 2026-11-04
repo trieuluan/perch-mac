@@ -36,12 +36,28 @@ final class SystemAudioAnalyzer {
     private static let fftSize = 1024
     private let ring = OSAllocatedUnfairLock(initialState: RingBuffer(capacity: fftSize))
     private let fft = FFTHelper(size: fftSize)
-    private var peaks: [Float] = []
+    /// Auto-gain peaks per requested band count, so views asking for different
+    /// numbers of bands don't reset each other.
+    private var peaks: [Int: [Float]] = [:]
     private var lastSignal = Date.distantPast
 
     /// True when real audio has been seen recently. When false (no permission,
     /// tap failed, or silence) the view falls back to its idle animation.
     var hasSignal: Bool { Date().timeIntervalSince(lastSignal) < 1.5 }
+
+    /// Raw per-frame features from the last `bands(count:)` call, computed on
+    /// unnormalized magnitudes (band levels are auto-gained, so they can't say
+    /// which part of the spectrum is really dominant).
+    struct Features {
+        /// Pitch of the strongest note between ~150 Hz and ~2 kHz, as 0...1 on a log scale.
+        var melody: Float = 0.5
+        /// How clearly that note stands out from its neighbours, 0...1.
+        var melodyStrength: Float = 0
+        /// Spectral centroid ("how bright the sound is"), 0 = dark/warm ... 1 = bright/airy.
+        var brightness: Float = 0.5
+    }
+
+    private(set) var features = Features()
 
     private init() {}
 
@@ -72,18 +88,22 @@ final class SystemAudioAnalyzer {
         // Silence gate.
         var rms: Float = 0
         vDSP_rmsqv(samples, 1, &rms, vDSP_Length(samples.count))
-        guard rms > 0.0005 else { return Array(repeating: 0, count: count) }
+        guard rms > 0.0005 else {
+            features.melodyStrength = 0
+            return Array(repeating: 0, count: count)
+        }
         lastSignal = Date()
 
         let magnitudes = fft.magnitudes(of: samples)
         let binHz = Float(sampleRate) / Float(Self.fftSize)
+        features = Self.features(magnitudes: magnitudes, binHz: binHz)
 
         // Log-spaced band edges between ~60 Hz and ~12 kHz.
         let low: Float = 60
         let high: Float = min(12_000, Float(sampleRate) / 2)
         let ratio = pow(high / low, 1 / Float(count))
 
-        if peaks.count != count { peaks = Array(repeating: 0.0001, count: count) }
+        var bandPeaks = peaks[count] ?? Array(repeating: 0.0001, count: count)
 
         var result = [Float](repeating: 0, count: count)
         for band in 0 ..< count {
@@ -98,8 +118,48 @@ final class SystemAudioAnalyzer {
             }
 
             // Simple per-band automatic gain: follow the recent peak, decay slowly.
-            peaks[band] = max(level, peaks[band] * 0.995)
-            result[band] = min(1, level / max(peaks[band], 0.0001))
+            bandPeaks[band] = max(level, bandPeaks[band] * 0.995)
+            result[band] = min(1, level / max(bandPeaks[band], 0.0001))
+        }
+        peaks[count] = bandPeaks
+        return result
+    }
+
+    private static func features(magnitudes: [Float], binHz: Float) -> Features {
+        var result = Features()
+
+        // Spectral centroid between 60 Hz and 12 kHz, mapped log-wise from 300 Hz to 6 kHz.
+        let lowBin = max(1, Int(60 / binHz))
+        let highBin = min(magnitudes.count - 1, Int(12_000 / binHz))
+        var weighted: Float = 0
+        var total: Float = 0
+        for bin in lowBin ... highBin {
+            weighted += Float(bin) * binHz * magnitudes[bin]
+            total += magnitudes[bin]
+        }
+        if total > 0 {
+            let centroid = weighted / total
+            result.brightness = min(1, max(0, log2(centroid / 300) / log2(6000 / 300)))
+        }
+
+        // Dominant note in the melody range.
+        let melodyLow = max(1, Int(150 / binHz))
+        let melodyHigh = min(magnitudes.count - 1, Int(2000 / binHz))
+        var peakBin = melodyLow
+        var peak: Float = 0
+        var sum: Float = 0
+        for bin in melodyLow ... melodyHigh {
+            sum += magnitudes[bin]
+            if magnitudes[bin] > peak {
+                peak = magnitudes[bin]
+                peakBin = bin
+            }
+        }
+        let mean = sum / Float(melodyHigh - melodyLow + 1)
+        if mean > 0 {
+            let frequency = Float(peakBin) * binHz
+            result.melody = min(1, max(0, log2(frequency / 150) / log2(2000 / 150)))
+            result.melodyStrength = min(1, max(0, (peak / mean - 2.5) / 6))
         }
         return result
     }
@@ -202,7 +262,7 @@ final class SystemAudioAnalyzer {
         aggregateID = AudioObjectID(kAudioObjectUnknown)
         tapID = AudioObjectID(kAudioObjectUnknown)
         ring.withLock { $0.reset() }
-        peaks = []
+        peaks = [:]
     }
 
     // MARK: - Output device changes (e.g. AirPods connected)

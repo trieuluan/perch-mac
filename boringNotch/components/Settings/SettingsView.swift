@@ -36,6 +36,9 @@ struct SettingsView: View {
                 NavigationLink(value: "Media") {
                     Label("Media", systemImage: "play.laptopcomputer")
                 }
+                NavigationLink(value: "Visualizer") { // Perch
+                    Label("Visualizer", systemImage: "waveform")
+                }
                 NavigationLink(value: "Calendar") {
                     Label("Calendar", systemImage: "calendar")
                 }
@@ -77,6 +80,8 @@ struct SettingsView: View {
                     Appearance()
                 case "Media":
                     Media()
+                case "Visualizer":
+                    VisualizerSettingsView()
                 case "Calendar":
                     CalendarSettings()
                 case "HUD":
