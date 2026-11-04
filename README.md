@@ -4,11 +4,49 @@
 
 Perch is a fork of [Boring Notch](https://github.com/TheBoredTeam/boring.notch) by TheBoredTeam. Like the original, it is licensed under **GPL-3.0** (see [LICENSE](./LICENSE)).
 
+## What Perch adds
+
+### Visualizers that follow the real audio
+
+Perch listens to what your Mac is playing (a Core Audio process tap, macOS 14.2+) and analyzes it on-device. Audio is never recorded or sent anywhere. Beyond loudness, it follows:
+
+- **24 frequency bands**, bass to treble
+- **The lead melody's pitch**, so effects swell where the melody is
+- **Drum hits** (kick, snare, hi-hat) and **note attacks** from any instrument, so songs without drums still get rhythm
+- **How bright the sound is**, which shifts the colors between warm and airy
+
+All of it shows up in:
+
+- **The closed notch**: the small bars next to the album art move with the music.
+- **Behind the player** when the notch is open, with 7 styles: floating particles, aurora, pulse glow, beat ripples, silk lines, spectrum bars with falling peak caps, and warp speed.
+- **Across the menu bar**, with 11 styles that start from the notch: spread from notch, spectrum silhouette, LED meter, 3D helix, 3D blocks, flowing wave, heartbeat line, beat comets, notch ripples, bass glow, and full-height bars. An intensity slider controls how strong they are. The effects never block clicks, and they pause when the menu bar is hidden or the screen is off.
+- **A menu bar icon** with a tiny spectrum. Click it to play or pause.
+
+**Colors**: pick vivid colors taken from the album art, monochrome, or your own 1–5 color gradient (with presets). Every visualizer uses the same palette.
+
+The first time, macOS asks for **System Audio Recording** access. Without it, visualizers fall back to a simple animation.
+
+### Menu bar icons hidden by the notch
+
+On a crowded menu bar, macOS hides icons behind the notch. Perch's **Menu Bar** tab lists those hidden icons and opens their menus. This needs **Accessibility** access.
+
+### Smaller things
+
+- The open notch sits flush with the top of the screen, even before onboarding finishes.
+- A Dock icon appears while onboarding is open, so its window can always be found. Reopening Perch.app shows Settings.
+- The Now Playing helper process exits with Perch, even after a force quit.
+
+All of these are in **Settings → Visualizer** and **Settings → General**.
+
 ## Planned
 
-- [ ] Real audio visualizer driven by system audio, not a canned animation
-- [ ] Mini waveform in the menu bar, toggleable in Settings
-- [ ] Better web music support (YouTube, SoundCloud, Zing MP3, NhacCuaTui…), with a browser extension for sites that don't expose Media Session
+- [x] Real audio visualizer driven by system audio
+- [x] Visualizers in the menu bar, toggleable in Settings
+- [x] Show menu bar icons hidden by the notch
+- [ ] Better web music support (Zing MP3, NhacCuaTui, SoundCloud…), with a browser extension for sites that don't report what's playing
+- [ ] Real menu bar icon images in the Menu Bar tab
+- [ ] Perch's own app icon
+- [ ] Signed, notarized releases with automatic updates
 - [ ] More widgets beyond music
 
 ## Building from source
@@ -23,7 +61,20 @@ open boringNotch.xcodeproj
 
 Then press `Cmd + R` in Xcode.
 
-Internal folder, target and scheme names still say `boringNotch`. They were kept on purpose so upstream changes keep merging cleanly.
+### Keep permissions across rebuilds (optional)
+
+By default, Debug builds are signed ad-hoc, so macOS forgets Accessibility and other permissions after every build. To avoid that, create `Configuration/Local.xcconfig` (it's gitignored) with your team:
+
+```
+DEVELOPMENT_TEAM = YOURTEAMID
+CODE_SIGN_IDENTITY[sdk=macosx*] = Apple Development
+```
+
+A free Personal Team works.
+
+### Code layout
+
+Perch-specific code lives in `boringNotch/Perch/` (and `BoringNotchXPCHelper/MenuBarItemsHelper.swift`), with small hooks in upstream files. Internal folder, target and scheme names still say `boringNotch`. Both choices keep upstream changes merging cleanly.
 
 ## Staying in sync with upstream
 

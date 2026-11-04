@@ -82,6 +82,7 @@ struct MenuBarOverlayView: View {
     }
 
     @ObservedObject private var coordinator = BoringViewCoordinator.shared
+    @ObservedObject private var visibility = MenuBarOverlayVisibility.shared
 
     private var notch: NotchGap {
         let liveActivity = coordinator.musicLiveActivityEnabled && (music.isPlaying || !music.isPlayerIdle)
@@ -102,8 +103,10 @@ struct MenuBarOverlayView: View {
         let source = engine.levels
         let features = engine.features
         let time = Date().timeIntervalSinceReferenceDate
-        let _ = state.update(levels: source, features: features, time: time)
+        let active = music.isPlaying && style != .none && visibility.isVisible
+        let _ = active ? state.update(levels: source, features: features, time: time) : ()
         Canvas { context, size in
+            guard active else { return }
             let shading = GraphicsContext.Shading.linearGradient(
                 Gradient(colors: colors), startPoint: .zero, endPoint: CGPoint(x: size.width, y: 0))
             switch style {
@@ -123,7 +126,7 @@ struct MenuBarOverlayView: View {
         }
         .opacity(music.isPlaying ? intensity : 0)
         .animation(.smooth(duration: 0.5), value: music.isPlaying)
-        .runsVisualizerEngine(music.isPlaying && style != .none)
+        .runsVisualizerEngine(active)
         .allowsHitTesting(false)
     }
 
@@ -214,9 +217,11 @@ struct MenuBarOverlayView: View {
 
             // Glow under the main wave.
             var glow = ctx
-            glow.addFilter(.blur(radius: 4))
-            glow.opacity = 0.55
-            glow.stroke(main, with: colors, style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
+            glow.opacity = 0.16
+            glow.stroke(main, with: colors, style: StrokeStyle(lineWidth: 6, lineCap: .round, lineJoin: .round))
+            var innerGlow = ctx
+            innerGlow.opacity = 0.25
+            innerGlow.stroke(main, with: colors, style: StrokeStyle(lineWidth: 3.5, lineCap: .round, lineJoin: .round))
 
             // Fainter second wave, out of phase, for a ribbon-like depth.
             var back = ctx

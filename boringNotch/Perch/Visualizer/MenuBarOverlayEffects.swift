@@ -115,13 +115,17 @@ enum MenuBarOverlayEffects {
                 gradient, startPoint: CGPoint(x: start, y: 0), endPoint: CGPoint(x: end, y: 0))
             let minX = min(start, end)
 
-            // Blurred halo rising from the bottom edge.
-            var halo = ctx
-            halo.addFilter(.blur(radius: 7))
-            halo.opacity = 0.45 + 0.55 * Double(pulse)
+            // Soft halo rising from the bottom edge: a few stacked, fading bands
+            // (much cheaper than a blur filter at 30fps).
             let haloHeight = 6 + 12 * pulse
-            halo.fill(Path(roundedRect: CGRect(x: minX, y: size.height - haloHeight, width: reach, height: haloHeight * 1.4),
-                           cornerRadius: haloHeight / 2), with: shading)
+            for band in 0 ..< 4 {
+                let t = CGFloat(band + 1) / 4
+                var halo = ctx
+                halo.opacity = (0.45 + 0.55 * Double(pulse)) * 0.22
+                halo.fill(Path(roundedRect: CGRect(x: minX, y: size.height - haloHeight * t, width: reach,
+                                                   height: haloHeight * t), cornerRadius: haloHeight * t / 2),
+                          with: shading)
+            }
 
             // Crisp line along the bottom edge.
             var line = ctx
@@ -137,9 +141,11 @@ enum MenuBarOverlayEffects {
             let offset = features.melody * span(size, notch)
             for x in [notch.minX - 10 - offset, notch.maxX + 10 + offset] {
                 var spot = ctx
-                spot.addFilter(.blur(radius: 6))
                 spot.opacity = Double(features.melodyStrength) * 0.9
-                spot.fill(Path(ellipseIn: CGRect(x: x - 18, y: size.height - 9, width: 36, height: 12)), with: .color(tint))
+                let center = CGPoint(x: x, y: size.height - 3)
+                spot.fill(Path(ellipseIn: CGRect(x: x - 22, y: size.height - 14, width: 44, height: 22)),
+                          with: .radialGradient(Gradient(colors: [tint, tint.opacity(0)]),
+                                                center: center, startRadius: 0, endRadius: 22))
             }
         }
     }
@@ -201,12 +207,18 @@ enum MenuBarOverlayEffects {
         let dt = state.ledPeakTime == 0 ? 0 : min(0.1, time - state.ledPeakTime)
         state.ledPeakTime = time
 
+        // Collect dots into one path per row and state, then fill each once:
+        // a few dozen fills per frame instead of thousands.
+        var lit = [Path](repeating: Path(), count: rows)
+        var peaks = [Path](repeating: Path(), count: rows)
+        var off = Path()
+
         for c in 0 ..< columns {
             let u = CGFloat(c) / CGFloat(columns)
             let level = min(1, sample(levels, at: u) + 0.4 * features.melodyBoost(at: u))
             // sqrt lifts quieter bands so the meter uses its full height.
             let litRows = max(1, level.squareRoot() * CGFloat(rows) * (1 - u * 0.25))
-            let lit = Int(litRows.rounded(.down))
+            let litCount = Int(litRows.rounded(.down))
             state.ledPeaks[c] = max(litRows, state.ledPeaks[c] - CGFloat(dt) * CGFloat(rows) * 0.9)
             let peakRow = Int(state.ledPeaks[c].rounded(.down))
 
@@ -214,17 +226,31 @@ enum MenuBarOverlayEffects {
                 let edge = direction < 0 ? notch.minX : notch.maxX
                 let x = edge + direction * (6 + CGFloat(c) * step) - (direction < 0 ? dot : 0)
                 for r in 0 ..< rows {
-                    let y = top + CGFloat(rows - 1 - r) * (dot + gap)
-                    // Rows take colors bottom to top along the gradient, like a hi-fi meter.
-                    let color = VisualizerPalette.sample(colors, at: CGFloat(r) / CGFloat(max(1, rows - 1)))
-                    let on = r < lit
-                    let isPeak = r == peakRow && peakRow >= lit
-                    var led = ctx
-                    led.opacity = on ? 0.85 : (isPeak ? 0.9 : 0.06)
-                    led.fill(Path(roundedRect: CGRect(x: x, y: y, width: dot, height: dot), cornerRadius: 0.8),
-                             with: .color(isPeak ? VisualizerPalette.lighten(color, amount: 0.5) : color))
+                    let rect = CGRect(x: x, y: top + CGFloat(rows - 1 - r) * (dot + gap), width: dot, height: dot)
+                    // Plain squares: at 3pt a corner radius isn't visible and costs a lot.
+                    if r < litCount {
+                        lit[r].addRect(rect)
+                    } else if r == peakRow {
+                        peaks[r].addRect(rect)
+                    } else {
+                        off.addRect(rect)
+                    }
                 }
             }
+        }
+
+        var dim = ctx
+        dim.opacity = 0.06
+        dim.fill(off, with: .color(colors.first ?? .white))
+        for r in 0 ..< rows {
+            // Rows take colors bottom to top along the gradient, like a hi-fi meter.
+            let color = VisualizerPalette.sample(colors, at: CGFloat(r) / CGFloat(max(1, rows - 1)))
+            var on = ctx
+            on.opacity = 0.85
+            on.fill(lit[r], with: .color(color))
+            var peak = ctx
+            peak.opacity = 0.9
+            peak.fill(peaks[r], with: .color(VisualizerPalette.lighten(color, amount: 0.5)))
         }
     }
 
@@ -259,10 +285,11 @@ enum MenuBarOverlayEffects {
                 style: StrokeStyle(lineWidth: radius * 1.2, lineCap: .round))
 
             var glow = ctx
-            glow.addFilter(.blur(radius: 3))
             glow.opacity = fade
-            glow.fill(Path(ellipseIn: CGRect(x: head.x - radius * 2, y: head.y - radius * 2,
-                                             width: radius * 4, height: radius * 4)), with: .color(color))
+            glow.fill(Path(ellipseIn: CGRect(x: head.x - radius * 3, y: head.y - radius * 3,
+                                             width: radius * 6, height: radius * 6)),
+                      with: .radialGradient(Gradient(colors: [color, color.opacity(0)]),
+                                            center: head, startRadius: 0, endRadius: radius * 3))
             var dotLayer = ctx
             dotLayer.opacity = fade
             dotLayer.fill(Path(ellipseIn: CGRect(x: head.x - radius, y: head.y - radius,
@@ -295,9 +322,8 @@ enum MenuBarOverlayEffects {
                 startPoint: CGPoint(x: start, y: 0), endPoint: CGPoint(x: start + direction * reach, y: 0))
 
             var glow = ctx
-            glow.addFilter(.blur(radius: 3))
-            glow.opacity = 0.6
-            glow.stroke(path, with: shading, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+            glow.opacity = 0.18
+            glow.stroke(path, with: shading, style: StrokeStyle(lineWidth: 4.5, lineCap: .round, lineJoin: .round))
             ctx.stroke(path, with: shading, style: StrokeStyle(lineWidth: 1.3, lineCap: .round, lineJoin: .round))
         }
     }
@@ -333,11 +359,20 @@ enum MenuBarOverlayEffects {
         let reach = span(size, notch)
         let mid = size.height / 2
         let points = 120
+        // Segments are grouped into a few depth layers and each layer is drawn
+        // with one stroke, back to front.
+        let layers = 6
 
         for direction in [-1.0, 1.0] as [CGFloat] {
             let start = direction < 0 ? notch.minX : notch.maxX
-            // Precompute both strands so they can be drawn as continuous ribbons.
-            var strands: [[(point: CGPoint, depth: CGFloat, u: CGFloat)]] = [[], []]
+            let shading = GraphicsContext.Shading.linearGradient(
+                Gradient(colors: colors), startPoint: CGPoint(x: start, y: 0),
+                endPoint: CGPoint(x: start + direction * reach, y: 0))
+
+            var paths = [Path](repeating: Path(), count: layers)
+            var rungs = Path()
+            var previous: [(CGPoint, CGFloat)] = []
+
             for p in 0 ..< points {
                 let u = CGFloat(p) / CGFloat(points - 1)
                 let x = start + direction * (6 + u * (reach - 6))
@@ -345,39 +380,44 @@ enum MenuBarOverlayEffects {
                 let phase = u * 16 - CGFloat(time) * 2.4
                 let level = sample(levels, at: u)
                 let amplitude = size.height * 0.38 * (0.4 + 0.6 * level) * (1 - u * 0.3)
+
+                var current: [(CGPoint, CGFloat)] = []
                 for strand in 0 ..< 2 {
                     let angle = phase + CGFloat(strand) * .pi
-                    strands[strand].append((CGPoint(x: x, y: mid + sin(angle) * amplitude), (cos(angle) + 1) / 2, u))
+                    current.append((CGPoint(x: x, y: mid + sin(angle) * amplitude), (cos(angle) + 1) / 2))
                 }
-                // Faint rungs between the strands.
                 if p % 6 == 0 {
-                    var rung = Path()
-                    rung.move(to: strands[0][p].point)
-                    rung.addLine(to: strands[1][p].point)
-                    var layer = ctx
-                    layer.opacity = 0.15
-                    layer.stroke(rung, with: .color(VisualizerPalette.sample(colors, at: u)), lineWidth: 0.8)
+                    rungs.move(to: current[0].0)
+                    rungs.addLine(to: current[1].0)
                 }
+                if !previous.isEmpty {
+                    for strand in 0 ..< 2 {
+                        let depth = (previous[strand].1 + current[strand].1) / 2
+                        let layer = min(layers - 1, Int(depth * CGFloat(layers)))
+                        paths[layer].move(to: previous[strand].0)
+                        paths[layer].addLine(to: current[strand].0)
+                    }
+                }
+                previous = current
             }
 
-            // Back segments first, then front, so the strand in front overlaps.
-            var segments: [(from: CGPoint, to: CGPoint, depth: CGFloat, u: CGFloat)] = []
-            for strand in strands {
-                for k in 1 ..< strand.count {
-                    let depth = (strand[k - 1].depth + strand[k].depth) / 2
-                    segments.append((strand[k - 1].point, strand[k].point, depth, strand[k].u))
+            var rungLayer = ctx
+            rungLayer.opacity = 0.15
+            rungLayer.stroke(rungs, with: shading, lineWidth: 0.8)
+
+            for layer in 0 ..< layers {
+                let depth = (CGFloat(layer) + 0.5) / CGFloat(layers)
+                var stroke = ctx
+                stroke.opacity = 0.2 + 0.8 * Double(depth)
+                stroke.stroke(paths[layer], with: shading,
+                              style: StrokeStyle(lineWidth: 0.6 + 1.8 * depth, lineCap: .round))
+                // Front-most layers get a light highlight.
+                if layer >= layers - 2 {
+                    var shine = ctx
+                    shine.opacity = 0.25
+                    shine.stroke(paths[layer], with: .color(.white),
+                                 style: StrokeStyle(lineWidth: 0.6, lineCap: .round))
                 }
-            }
-            for segment in segments.sorted(by: { $0.depth < $1.depth }) {
-                var path = Path()
-                path.move(to: segment.from)
-                path.addLine(to: segment.to)
-                let color = VisualizerPalette.sample(colors, at: segment.u)
-                var layer = ctx
-                layer.opacity = 0.2 + 0.8 * Double(segment.depth)
-                layer.stroke(path,
-                             with: .color(segment.depth > 0.6 ? VisualizerPalette.lighten(color, amount: 0.3) : color),
-                             style: StrokeStyle(lineWidth: 0.6 + 1.8 * segment.depth, lineCap: .round))
             }
         }
     }
@@ -395,46 +435,53 @@ enum MenuBarOverlayEffects {
         guard columns > 0 else { return }
         let floor = size.height - 2
 
-        for c in 0 ..< columns {
-            let u = CGFloat(c) / CGFloat(columns)
-            let level = min(1, sample(levels, at: u) + 0.4 * features.melodyBoost(at: u))
-            let height = max(2, (size.height - 6) * level * (1 - u * 0.3))
-            let color = VisualizerPalette.sample(colors, at: u)
-            let fade = Double(1 - u * 0.5)
+        for direction in [-1.0, 1.0] as [CGFloat] {
+            let edge = direction < 0 ? notch.minX : notch.maxX
+            let shading = GraphicsContext.Shading.linearGradient(
+                Gradient(colors: colors + [(colors.last ?? .white).opacity(0.5)]),
+                startPoint: CGPoint(x: edge, y: 0), endPoint: CGPoint(x: edge + direction * reach, y: 0))
 
-            for direction in [-1.0, 1.0] as [CGFloat] {
-                let edge = direction < 0 ? notch.minX : notch.maxX
+            // All faces of one kind go into a single path, filled once.
+            var fronts = Path()
+            var sides = Path()
+            var tops = Path()
+
+            for c in 0 ..< columns {
+                let u = CGFloat(c) / CGFloat(columns)
+                let level = min(1, sample(levels, at: u) + 0.4 * features.melodyBoost(at: u))
+                let height = max(2, (size.height - 6) * level * (1 - u * 0.3))
                 let left = direction < 0
                     ? edge - 6 - CGFloat(c + 1) * step + (step - width)
                     : edge + 6 + CGFloat(c) * step
                 // Extrude away from the notch so both sides look symmetric.
                 let dx = direction * depthX
                 let front = CGRect(x: left, y: floor - height, width: width, height: height)
+                fronts.addRect(front)
 
-                var top = Path()
-                top.move(to: CGPoint(x: front.minX, y: front.minY))
-                top.addLine(to: CGPoint(x: front.maxX, y: front.minY))
-                top.addLine(to: CGPoint(x: front.maxX + dx, y: front.minY - depthY))
-                top.addLine(to: CGPoint(x: front.minX + dx, y: front.minY - depthY))
-                top.closeSubpath()
+                tops.move(to: CGPoint(x: front.minX, y: front.minY))
+                tops.addLine(to: CGPoint(x: front.maxX, y: front.minY))
+                tops.addLine(to: CGPoint(x: front.maxX + dx, y: front.minY - depthY))
+                tops.addLine(to: CGPoint(x: front.minX + dx, y: front.minY - depthY))
+                tops.closeSubpath()
 
                 let sideX = direction > 0 ? front.maxX : front.minX
-                var side = Path()
-                side.move(to: CGPoint(x: sideX, y: front.minY))
-                side.addLine(to: CGPoint(x: sideX + dx, y: front.minY - depthY))
-                side.addLine(to: CGPoint(x: sideX + dx, y: front.maxY - depthY))
-                side.addLine(to: CGPoint(x: sideX, y: front.maxY))
-                side.closeSubpath()
-
-                var layer = ctx
-                layer.opacity = fade
-                layer.fill(side, with: .color(color.opacity(0.45)))
-                layer.fill(Path(front), with: .linearGradient(
-                    Gradient(colors: [color.opacity(0.85), color.opacity(0.35)]),
-                    startPoint: CGPoint(x: front.midX, y: front.minY),
-                    endPoint: CGPoint(x: front.midX, y: front.maxY)))
-                layer.fill(top, with: .color(VisualizerPalette.lighten(color, amount: 0.45)))
+                sides.move(to: CGPoint(x: sideX, y: front.minY))
+                sides.addLine(to: CGPoint(x: sideX + dx, y: front.minY - depthY))
+                sides.addLine(to: CGPoint(x: sideX + dx, y: front.maxY - depthY))
+                sides.addLine(to: CGPoint(x: sideX, y: front.maxY))
+                sides.closeSubpath()
             }
+
+            var sideLayer = ctx
+            sideLayer.opacity = 0.4
+            sideLayer.fill(sides, with: shading)
+            var frontLayer = ctx
+            frontLayer.opacity = 0.75
+            frontLayer.fill(fronts, with: shading)
+            ctx.fill(tops, with: shading)
+            var shine = ctx
+            shine.opacity = 0.4
+            shine.fill(tops, with: .color(.white))
         }
     }
 

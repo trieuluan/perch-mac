@@ -13,12 +13,23 @@ import Combine
 import Defaults
 import SwiftUI
 
+/// Whether the overlay window is actually on screen. It isn't while a
+/// full-screen app hides the menu bar, the display sleeps or the Mac is locked,
+/// and the overlay stops drawing (and stops the audio tap) until it is again.
+@MainActor
+final class MenuBarOverlayVisibility: ObservableObject {
+    static let shared = MenuBarOverlayVisibility()
+    @Published fileprivate(set) var isVisible = true
+    private init() {}
+}
+
 @MainActor
 final class MenuBarOverlayController {
     static let shared = MenuBarOverlayController()
 
     private var window: NSPanel?
     private var cancellables: Set<AnyCancellable> = []
+    private var occlusionObserver: NSObjectProtocol?
 
     private init() {}
 
@@ -53,6 +64,8 @@ final class MenuBarOverlayController {
     }
 
     private func tearDown() {
+        if let occlusionObserver { NotificationCenter.default.removeObserver(occlusionObserver) }
+        occlusionObserver = nil
         window?.orderOut(nil)
         window = nil
     }
@@ -100,5 +113,14 @@ final class MenuBarOverlayController {
         panel.setFrame(frame, display: false)
         panel.orderFrontRegardless()
         window = panel
+
+        occlusionObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didChangeOcclusionStateNotification, object: panel, queue: .main
+        ) { [weak panel] _ in
+            MainActor.assumeIsolated {
+                MenuBarOverlayVisibility.shared.isVisible = panel?.occlusionState.contains(.visible) ?? false
+            }
+        }
+        MenuBarOverlayVisibility.shared.isVisible = panel.occlusionState.contains(.visible)
     }
 }

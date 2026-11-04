@@ -198,7 +198,8 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
         }
         
         process.executableURL = URL(fileURLWithPath: "/usr/bin/perl")
-        process.arguments = [scriptURL.path, frameworkPath, "stream"]
+        // Perch: run under a watchdog so the adapter exits when Perch does.
+        process.arguments = AdapterWatchdog.perlArguments(for: [scriptURL.path, frameworkPath, "stream"])
         
         let pipeHandler = JSONLinesPipeHandler()
         process.standardOutput = await pipeHandler.getPipe()
