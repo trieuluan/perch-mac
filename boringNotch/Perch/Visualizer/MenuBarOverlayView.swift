@@ -13,8 +13,14 @@ import SwiftUI
 enum MenuBarOverlayStyle: String, CaseIterable, Identifiable, Defaults.Serializable {
     case none
     case fromNotch
-    case edgeBars
+    case silhouette
+    case ledMeter
+    case helix
+    case blocks3D
     case waveLine
+    case pulseLine
+    case comets
+    case notchRipples
     case bassGlow
     case fullBars
 
@@ -24,7 +30,13 @@ enum MenuBarOverlayStyle: String, CaseIterable, Identifiable, Defaults.Serializa
         switch self {
         case .none: return String(localized: "Off")
         case .fromNotch: return String(localized: "Spread from notch")
-        case .edgeBars: return String(localized: "Edge bars")
+        case .silhouette: return String(localized: "Spectrum silhouette")
+        case .ledMeter: return String(localized: "LED meter")
+        case .pulseLine: return String(localized: "Heartbeat line")
+        case .comets: return String(localized: "Beat comets")
+        case .notchRipples: return String(localized: "Notch ripples")
+        case .helix: return String(localized: "3D helix")
+        case .blocks3D: return String(localized: "3D blocks")
         case .waveLine: return String(localized: "Flowing wave")
         case .bassGlow: return String(localized: "Bass glow")
         case .fullBars: return String(localized: "Full-height bars")
@@ -35,9 +47,15 @@ enum MenuBarOverlayStyle: String, CaseIterable, Identifiable, Defaults.Serializa
         switch self {
         case .none: return String(localized: "No overlay on the menu bar.")
         case .fromNotch: return String(localized: "Bass right beside the notch, highs spreading to the edges.")
-        case .edgeBars: return String(localized: "A thin spectrum along the bottom edge. Never covers text.")
-        case .waveLine: return String(localized: "A smooth wave gliding along the bottom edge.")
-        case .bassGlow: return String(localized: "The bottom edge glows and pulses with the beat.")
+        case .silhouette: return String(localized: "A smooth, filled mountain range of the spectrum flowing out of the notch.")
+        case .ledMeter: return String(localized: "Retro LED dots lighting up row by row, like a hi-fi level meter.")
+        case .pulseLine: return String(localized: "A heartbeat trace scrolling out from the notch, spiking on kicks and snares.")
+        case .comets: return String(localized: "Streaks shooting out of the notch on every drum hit and note. Great for rhythmic songs.")
+        case .notchRipples: return String(localized: "Arcs spreading out from under the notch on kicks, snares and notes.")
+        case .helix: return String(localized: "Two strands twisting in 3D out of the notch, swelling with each part of the spectrum.")
+        case .blocks3D: return String(localized: "Little 3D blocks rising from the notch outward, with lit tops and shaded sides.")
+        case .waveLine: return String(localized: "Two interlaced, glowing waves flowing out of the notch along the bottom edge.")
+        case .bassGlow: return String(localized: "A soft light spreading from the notch along the bottom edge, further on every beat.")
         case .fullBars: return String(localized: "Translucent bars the height of the menu bar. Most striking.")
         }
     }
@@ -55,7 +73,21 @@ struct NotchGap {
 }
 
 struct MenuBarOverlayView: View {
-    let notch: NotchGap
+    /// The physical notch. While music plays, Perch's closed notch widens to
+    /// show the album art and bars, so effects start from that wider edge.
+    let physicalNotch: NotchGap
+
+    init(notch: NotchGap) {
+        physicalNotch = notch
+    }
+
+    @ObservedObject private var coordinator = BoringViewCoordinator.shared
+
+    private var notch: NotchGap {
+        let liveActivity = coordinator.musicLiveActivityEnabled && (music.isPlaying || !music.isPlayerIdle)
+        let inset: CGFloat = liveActivity ? 46 : 0
+        return NotchGap(minX: physicalNotch.minX - inset, maxX: physicalNotch.maxX + inset)
+    }
 
     @ObservedObject private var engine = VisualizerEngine.shared
     @ObservedObject private var music = MusicManager.shared
@@ -63,20 +95,29 @@ struct MenuBarOverlayView: View {
     @Default(.menuBarOverlayIntensity) private var intensity
     @Default(.visualizerColorMode) private var colorMode
     @Default(.visualizerGradient) private var gradient
+    @State private var state = MenuBarOverlayState()
 
     var body: some View {
         let colors = VisualizerPalette.colors(albumArt: music.avgColor)
         let source = engine.levels
         let features = engine.features
+        let time = Date().timeIntervalSinceReferenceDate
+        let _ = state.update(levels: source, features: features, time: time)
         Canvas { context, size in
             let shading = GraphicsContext.Shading.linearGradient(
                 Gradient(colors: colors), startPoint: .zero, endPoint: CGPoint(x: size.width, y: 0))
             switch style {
             case .none: break
             case .fromNotch: Self.drawFromNotch(&context, size, source, shading, notch, features)
-            case .edgeBars: Self.drawEdgeBars(&context, size, source, shading, features)
+            case .helix: MenuBarOverlayEffects.drawHelix(&context, size, source, notch, time, colors)
+            case .blocks3D: MenuBarOverlayEffects.drawBlocks3D(&context, size, source, notch, features, colors)
             case .waveLine: Self.drawWave(&context, size, source, shading, notch, features)
-            case .bassGlow: Self.drawBassGlow(&context, size, source, shading, notch, features, colors)
+            case .silhouette: MenuBarOverlayEffects.drawSilhouette(&context, size, source, notch, features, colors)
+            case .ledMeter: MenuBarOverlayEffects.drawLEDMeter(&context, size, source, notch, features, colors, state, time)
+            case .pulseLine: MenuBarOverlayEffects.drawPulseLine(&context, size, state, notch, colors)
+            case .comets: MenuBarOverlayEffects.drawComets(&context, size, state, notch, time, colors)
+            case .notchRipples: MenuBarOverlayEffects.drawNotchRipples(&context, size, state, notch, time, colors)
+            case .bassGlow: MenuBarOverlayEffects.drawBassGlow(&context, size, state, notch, features, colors)
             case .fullBars: Self.drawFullBars(&context, size, source, shading, features)
             }
         }
@@ -133,74 +174,57 @@ struct MenuBarOverlayView: View {
         }
     }
 
-    private static func drawEdgeBars(_ ctx: inout GraphicsContext, _ size: CGSize, _ levels: [CGFloat],
-                                     _ shading: GraphicsContext.Shading, _ features: MusicFeatures) {
-        let step: CGFloat = 12
-        let count = Int(size.width / step)
-        for i in 0 ..< count {
-            // Mirror so bass sits in the middle of the screen.
-            let u = abs(CGFloat(i) / CGFloat(max(1, count - 1)) - 0.5) * 2
-            let height = 1.5 + sample(levels, at: u) * 5 + features.melodyBoost(at: u) * 4
-            ctx.fill(Path(roundedRect: CGRect(x: CGFloat(i) * step + 2, y: size.height - height,
-                                              width: step - 4, height: height), cornerRadius: 1),
-                     with: shading)
-        }
-    }
-
+    /// Two interlaced waves along the bottom edge, travelling outward from the
+    /// notch, with a soft glow under the main one. Stays in the lower part of
+    /// the bar so it never crosses menu titles or icons.
     private static func drawWave(_ ctx: inout GraphicsContext, _ size: CGSize, _ levels: [CGFloat],
                                  _ shading: GraphicsContext.Shading, _ notch: NotchGap,
                                  _ features: MusicFeatures) {
-        let baseline = size.height - 5
-        let amplitude: CGFloat = 4
+        let baseline = size.height - 9
+        let maxAmplitude: CGFloat = 7.5
         let time = CGFloat(Date().timeIntervalSinceReferenceDate)
-        var path = Path()
-        let steps = Int(size.width / 4)
-        for s in 0 ... steps {
-            let x = CGFloat(s) / CGFloat(steps) * size.width
-            let center = (notch.minX + notch.maxX) / 2
-            let u = min(1, abs(x - center) / (size.width / 2))
-            let level = sample(levels, at: u)
-            let boost = features.melodyBoost(at: u)
-            let y = baseline + sin(x / 18 - time * 3) * amplitude * (0.15 + level + 1.2 * boost)
-            if s == 0 { path.move(to: CGPoint(x: x, y: y)) } else { path.addLine(to: CGPoint(x: x, y: y)) }
-        }
-        ctx.stroke(path, with: shading, style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round))
-    }
+        let reach = max(1, min(notch.minX, size.width - notch.maxX) - 4)
+        let colors = shading // horizontal palette for the whole bar
 
-    private static func drawBassGlow(_ ctx: inout GraphicsContext, _ size: CGSize, _ levels: [CGFloat],
-                                     _ shading: GraphicsContext.Shading, _ notch: NotchGap,
-                                     _ features: MusicFeatures, _ colors: [Color]) {
-        // Two bright spots glide along the edge with the melody's pitch,
-        // mirrored around the notch (higher notes further out).
-        if features.melodyStrength > 0.05 {
-            let center = (notch.minX + notch.maxX) / 2
-            let offset = (notch.maxX - notch.minX) / 2 + 20 + features.melody * (size.width / 2 - 80)
-            let tint = colors[colors.count / 2]
-            for x in [center - offset, center + offset] {
-                let radius: CGFloat = 40 + 50 * features.melodyStrength
-                let point = CGPoint(x: x, y: size.height)
-                ctx.fill(
-                    Path(ellipseIn: CGRect(x: x - radius, y: size.height - radius, width: radius * 2, height: radius * 2)),
-                    with: .radialGradient(
-                        Gradient(stops: [
-                            .init(color: tint.opacity(0.6 * Double(features.melodyStrength)), location: 0),
-                            .init(color: .clear, location: 1),
-                        ]),
-                        center: point, startRadius: 0, endRadius: radius))
+        // (frequency, speed, phase offset, amplitude scale)
+        let waves: [(CGFloat, CGFloat, CGFloat, CGFloat)] = [(18, 3.0, 0, 1), (23, 2.3, .pi * 0.6, 0.65)]
+
+        func path(direction: CGFloat, wave: (CGFloat, CGFloat, CGFloat, CGFloat)) -> Path {
+            var path = Path()
+            let start = direction < 0 ? notch.minX : notch.maxX
+            let steps = Int(reach / 3)
+            for s in 0 ... steps {
+                let d = CGFloat(s) / CGFloat(steps) * reach
+                let u = d / reach
+                let level = sample(levels, at: u)
+                let boost = features.melodyBoost(at: u)
+                let amplitude = min(maxAmplitude, maxAmplitude * (0.2 + level + 1.2 * boost)) * wave.3
+                // Ease in from the notch so the wave starts flat at its edge.
+                let ease = min(1, d / 30)
+                let y = baseline + sin(d / wave.0 - time * wave.1 + wave.2) * amplitude * ease
+                let point = CGPoint(x: start + direction * d, y: y)
+                if s == 0 { path.move(to: point) } else { path.addLine(to: point) }
             }
+            return path
         }
 
-        let bass = sample(levels, at: 0.05)
-        // Soft wash in the lower part of the bar, stronger on the beat.
-        var wash = ctx
-        wash.opacity = Double(bass) * 0.3
-        wash.fill(Path(CGRect(x: 0, y: size.height * 0.5, width: size.width, height: size.height * 0.5)),
-                  with: shading)
+        for direction in [-1.0, 1.0] as [CGFloat] {
+            let main = path(direction: direction, wave: waves[0])
+            let second = path(direction: direction, wave: waves[1])
 
-        var edge = ctx
-        edge.opacity = 0.35 + Double(bass) * 0.65
-        let thickness = 1.5 + bass * 2
-        edge.fill(Path(CGRect(x: 0, y: size.height - thickness, width: size.width, height: thickness)), with: shading)
+            // Glow under the main wave.
+            var glow = ctx
+            glow.addFilter(.blur(radius: 4))
+            glow.opacity = 0.55
+            glow.stroke(main, with: colors, style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
+
+            // Fainter second wave, out of phase, for a ribbon-like depth.
+            var back = ctx
+            back.opacity = 0.45
+            back.stroke(second, with: colors, style: StrokeStyle(lineWidth: 1.1, lineCap: .round, lineJoin: .round))
+
+            ctx.stroke(main, with: colors, style: StrokeStyle(lineWidth: 1.7, lineCap: .round, lineJoin: .round))
+        }
     }
 
     private static func drawFullBars(_ ctx: inout GraphicsContext, _ size: CGSize, _ levels: [CGFloat],
