@@ -1,0 +1,15 @@
+// Signing defaults for the Perch app and its XPC helper.
+//
+// By default builds are signed ad-hoc, as upstream does. Ad-hoc signatures change
+// on every build, so macOS forgets Accessibility and other permissions after each ⌘R.
+//
+// To keep permissions across builds, create Configuration/Local.xcconfig (gitignored):
+//
+//   DEVELOPMENT_TEAM = YOURTEAMID
+//   CODE_SIGN_IDENTITY[sdk=macosx*] = Apple Development
+
+CODE_SIGN_IDENTITY = Apple Development
+CODE_SIGN_IDENTITY[sdk=macosx*] = -
+DEVELOPMENT_TEAM =
+
+#include? "Local.xcconfig"
