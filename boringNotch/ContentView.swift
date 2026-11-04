@@ -464,7 +464,7 @@ struct ContentView: View {
                         .frame(width: 50, alignment: .center)
                         .matchedGeometryEffect(id: "spectrum", in: albumArtNamespace)
                         .mask {
-                            AudioSpectrumView(isPlaying: $musicManager.isPlaying)
+                            LiveAudioSpectrumView(isPlaying: $musicManager.isPlaying) // Perch: real audio
                                 .frame(width: 16, height: 12)
                         }
                 } else {
