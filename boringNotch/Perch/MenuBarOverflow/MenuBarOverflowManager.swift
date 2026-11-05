@@ -14,14 +14,23 @@ extension Defaults.Keys {
 }
 
 struct MenuBarOverflowItem: Identifiable {
-    let pid: pid_t
-    let index: Int
+    /// Owning app and its item index, when Accessibility exposes the item.
+    let pid: pid_t?
+    let axIndex: Int?
+    /// The item's status window, when it could be matched.
+    let windowID: CGWindowID?
     let title: String
     let frame: CGRect
-    let appName: String
-    let icon: NSImage?
+    let appName: String?
+    /// The owning app's icon, used when there's no real image.
+    let appIcon: NSImage?
+    /// What the item really looks like in the menu bar (needs Screen Recording).
+    var image: NSImage?
 
-    var id: String { "\(pid)-\(index)" }
+    var id: String {
+        if let windowID { return "w\(windowID)" }
+        return "\(pid ?? 0)-\(axIndex ?? 0)"
+    }
 }
 
 @MainActor
@@ -37,6 +46,10 @@ final class MenuBarOverflowManager: ObservableObject {
 
     @Published private(set) var hiddenItems: [MenuBarOverflowItem] = []
     @Published private(set) var state: State = .idle
+    /// False until Perch has Screen Recording access; items then show app icons.
+    @Published private(set) var showsRealIcons = MenuBarItemWindows.canCapture
+    /// Set briefly when an item couldn't be opened from Perch.
+    @Published private(set) var unreachableItemID: String?
 
     private init() {}
 
@@ -44,7 +57,8 @@ final class MenuBarOverflowManager: ObservableObject {
         if state != .loaded { state = .loading }
 
         guard let data = await XPCHelperClient.shared.menuBarItemsData(),
-              let raw = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]]
+              let raw = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
+              let geometry = Self.notchGeometry()
         else {
             hiddenItems = []
             state = .needsPermission
@@ -52,23 +66,87 @@ final class MenuBarOverflowManager: ObservableObject {
         }
 
         let ownPID = ProcessInfo.processInfo.processIdentifier
-        hiddenItems = raw
-            .compactMap(Self.parse)
-            .filter { $0.pid != ownPID && Self.isHiddenByNotch($0.frame) }
-            .sorted { $0.frame.minX < $1.frame.minX }
+        let axItems = raw.compactMap(Self.parse)
+        let ownFrames = axItems.filter { $0.pid == ownPID }.map(\.frame)
+
+        // Every status window behind the notch, minus Perch's own items.
+        var windows = MenuBarItemWindows.all(in: geometry.band).filter { window in
+            geometry.isHidden(window.frame)
+                && !window.name.hasPrefix("Perch")
+                && !ownFrames.contains { Self.sameSpot($0, window.frame) }
+        }
+
+        // Items Accessibility knows about, matched to their windows.
+        var items: [MenuBarOverflowItem] = axItems
+            .filter { $0.pid != ownPID && geometry.isHidden($0.frame) }
+            .map { item in
+                guard let match = windows.firstIndex(where: { Self.sameSpot($0.frame, item.frame) }) else { return item }
+                let window = windows.remove(at: match)
+                return MenuBarOverflowItem(pid: item.pid, axIndex: item.axIndex, windowID: window.id, title: item.title,
+                                           frame: item.frame, appName: item.appName, appIcon: item.appIcon)
+            }
+
+        // Windows nobody claimed: items Accessibility doesn't expose.
+        items += windows.map { window in
+            MenuBarOverflowItem(pid: nil, axIndex: nil, windowID: window.id, title: "", frame: window.frame,
+                                appName: nil, appIcon: nil)
+        }
+
+        items.sort { $0.frame.minX < $1.frame.minX }
+        hiddenItems = items
         state = .loaded
+
+        await loadImages()
     }
 
-    /// Opens the item's menu. Falls back to activating the owning app if the
-    /// item doesn't respond to AXPress.
+    /// Asks for Screen Recording access so real icons can be shown.
+    func requestRealIcons() {
+        MenuBarItemWindows.requestCaptureAccess()
+    }
+
+    /// Opens the item's menu with AXPress, falling back to activating its app.
     func open(_ item: MenuBarOverflowItem) async {
-        let pressed = await XPCHelperClient.shared.pressMenuBarItem(pid: item.pid, index: item.index)
-        if !pressed {
-            NSRunningApplication(processIdentifier: item.pid)?.activate()
+        if let pid = item.pid, let index = item.axIndex,
+           await XPCHelperClient.shared.pressMenuBarItem(pid: pid, index: index) {
+            return
+        }
+        guard item.axIndex != nil else {
+            // Accessibility doesn't expose this item, and a click can't reach an
+            // item the notch hides, so explain instead of doing nothing.
+            unreachableItemID = item.id
+            try? await Task.sleep(for: .seconds(4))
+            if unreachableItemID == item.id { unreachableItemID = nil }
+            return
+        }
+        if let pid = item.pid {
+            NSRunningApplication(processIdentifier: pid)?.activate()
         }
     }
 
     // MARK: - Helpers
+
+    private func loadImages() async {
+        showsRealIcons = MenuBarItemWindows.canCapture
+        guard showsRealIcons else { return }
+
+        let windows = hiddenItems.compactMap { item -> MenuBarItemWindow? in
+            guard let id = item.windowID else { return nil }
+            return MenuBarItemWindow(id: id, frame: item.frame, ownerPID: 0, name: "")
+        }
+        let images = await MenuBarItemWindows.images(for: windows)
+        hiddenItems = hiddenItems.map { item in
+            var item = item
+            if let id = item.windowID { item.image = images[id] }
+            return item
+        }
+    }
+
+    /// Accessibility reports the icon's own frame (e.g. 24×24, inset), while the
+    /// window list reports the whole item slot (e.g. 38×39). They are the same
+    /// item when the icon's center falls inside the slot.
+    private static func sameSpot(_ icon: CGRect, _ slot: CGRect) -> Bool {
+        slot.insetBy(dx: -1, dy: -1).contains(CGPoint(x: icon.midX, y: icon.midY))
+    }
 
     private static func parse(_ dict: [String: Any]) -> MenuBarOverflowItem? {
         guard let pid = (dict["pid"] as? NSNumber)?.int32Value,
@@ -82,33 +160,36 @@ final class MenuBarOverflowManager: ObservableObject {
         let app = NSRunningApplication(processIdentifier: pid)
         return MenuBarOverflowItem(
             pid: pid,
-            index: index,
+            axIndex: index,
+            windowID: nil,
             title: dict["title"] as? String ?? "",
             frame: CGRect(x: x, y: y, width: width, height: height),
-            appName: app?.localizedName ?? "Unknown",
-            icon: app?.icon
+            appName: app?.localizedName,
+            appIcon: app?.icon
         )
     }
 
-    /// `frame` is in Accessibility coordinates (top-left origin of the primary screen).
-    /// An item counts as hidden when it sits in the notched screen's menu bar but
-    /// left of the visible area to the right of the notch.
-    private static func isHiddenByNotch(_ frame: CGRect) -> Bool {
+    /// The notched screen's menu bar band and its visible area right of the
+    /// notch, in top-left global coordinates (like Accessibility and window frames).
+    private struct NotchGeometry {
+        let band: CGRect
+        let visibleMinX: CGFloat
+
+        /// Hidden = in the menu bar, but left of what's visible right of the notch.
+        func isHidden(_ frame: CGRect) -> Bool {
+            band.contains(CGPoint(x: frame.midX, y: frame.midY)) && frame.minX < visibleMinX - 0.5
+        }
+    }
+
+    private static func notchGeometry() -> NotchGeometry? {
         guard let primary = NSScreen.screens.first,
               let screen = NSScreen.screens.first(where: { $0.auxiliaryTopRightArea != nil }),
               let visibleRight = screen.auxiliaryTopRightArea
-        else { return false }
-
-        // Convert the menu bar band of the notched screen to top-left coordinates.
+        else { return nil }
         let bandTop = primary.frame.height - visibleRight.maxY
-        let band = CGRect(
-            x: screen.frame.minX,
-            y: bandTop,
-            width: screen.frame.width,
-            height: visibleRight.height
+        return NotchGeometry(
+            band: CGRect(x: screen.frame.minX, y: bandTop, width: screen.frame.width, height: visibleRight.height),
+            visibleMinX: visibleRight.minX
         )
-        guard band.contains(CGPoint(x: frame.midX, y: frame.midY)) else { return false }
-
-        return frame.minX < visibleRight.minX - 0.5
     }
 }
