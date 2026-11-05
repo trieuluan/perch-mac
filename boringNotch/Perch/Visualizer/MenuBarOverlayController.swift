@@ -23,6 +23,14 @@ final class MenuBarOverlayVisibility: ObservableObject {
     private init() {}
 }
 
+/// AppKit moves windows below the main-menu level out from under the menu
+/// bar. The overlay has to stay exactly on it, so frame constraining is off.
+private final class MenuBarOverlayPanel: NSPanel {
+    override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
+        frameRect
+    }
+}
+
 @MainActor
 final class MenuBarOverlayController {
     static let shared = MenuBarOverlayController()
@@ -94,7 +102,7 @@ final class MenuBarOverlayController {
             notch = NotchGap(minX: frame.width / 2, maxX: frame.width / 2)
         }
 
-        let panel = NSPanel(
+        let panel = MenuBarOverlayPanel(
             contentRect: frame,
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
@@ -106,8 +114,10 @@ final class MenuBarOverlayController {
         panel.ignoresMouseEvents = true
         panel.isReleasedWhenClosed = false
         panel.hidesOnDeactivate = false
-        // Above status items (25), below Perch's notch window (27).
-        panel.level = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 1)
+        // Just below the menu bar itself (main menu is 24, status items 25), so
+        // menu titles and icons draw on top of the effect. The macOS 26 menu bar
+        // has a transparent background, so the effect shows through behind them.
+        panel.level = NSWindow.Level(rawValue: NSWindow.Level.mainMenu.rawValue - 1)
         panel.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
         panel.contentView = NSHostingView(rootView: MenuBarOverlayView(notch: notch))
         panel.setFrame(frame, display: false)
