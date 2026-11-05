@@ -10,15 +10,15 @@
 	<key>NSAudioCaptureUsageDescription</key>
 	<string>Perch listens to the audio your Mac is playing to animate the music visualizer. Audio is analyzed on your Mac and is never recorded or sent anywhere.</string>
 	<key>SUEnableAutomaticChecks</key>
-	<false/>
+	<true/>
 	<key>SUEnableDownloaderService</key>
 	<true/>
 	<key>SUEnableInstallerLauncherService</key>
 	<true/>
 	<key>SUFeedURL</key>
-	<string>https://trieuluan.github.io/perch-mac/appcast.xml</string>
+	<string>https://github.com/trieuluan/perch-mac/releases/latest/download/appcast.xml</string>
 	<key>SUPublicEDKey</key>
-	<string>B1Y47t8C/v8ImurYA+9arEsuCrpxwJSviekiflMElbI=</string>
+	<string>J4CDqH0tSsNqfX4+4SVRsaz+EHTKKubhX6R3hZfxRO4=</string>
 	<key>UTImportedTypeDeclarations</key>
 	<array>
 		<dict/>

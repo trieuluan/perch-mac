@@ -4,6 +4,26 @@
 
 Perch is a fork of [Boring Notch](https://github.com/TheBoredTeam/boring.notch) by TheBoredTeam. Like the original, it is licensed under **GPL-3.0** (see [LICENSE](./LICENSE)).
 
+## Install
+
+Requires **macOS 14 Sonoma or later** (visualizers need 14.2+).
+
+**With Homebrew** (recommended):
+
+```bash
+brew install --cask trieuluan/perch/perch
+```
+
+**Or download** `Perch.dmg` from the [latest release](https://github.com/trieuluan/perch-mac/releases/latest) and drag Perch into Applications.
+
+Perch isn't notarized by Apple yet, so the first time you open a downloaded copy, macOS blocks it. To allow it, go to **System Settings › Privacy & Security**, find the message about Perch, and click **Open Anyway**. Or run:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Perch.app
+```
+
+The Homebrew cask does this for you. After that, Perch updates itself through Sparkle.
+
 ## What Perch adds
 
 ### Visualizers that follow the real audio
@@ -46,7 +66,8 @@ All of these are in **Settings → Visualizer** and **Settings → General**.
 - [ ] Better web music support (Zing MP3, NhacCuaTui, SoundCloud…), with a browser extension for sites that don't report what's playing
 - [ ] Real menu bar icon images in the Menu Bar tab
 - [ ] Perch's own app icon
-- [ ] Signed, notarized releases with automatic updates
+- [x] Releases with automatic updates (DMG, Homebrew, Sparkle)
+- [ ] Developer ID signing and notarization
 - [ ] More widgets beyond music
 
 ## Building from source
@@ -75,6 +96,17 @@ A free Personal Team works.
 ### Code layout
 
 Perch-specific code lives in `boringNotch/Perch/` (and `BoringNotchXPCHelper/MenuBarItemsHelper.swift`), with small hooks in upstream files. Internal folder, target and scheme names still say `boringNotch`. Both choices keep upstream changes merging cleanly.
+
+## Releasing
+
+Releases are built and published from a Mac, with no CI secrets:
+
+```bash
+Configuration/release/release.sh 1.1.0            # dry run: build, DMG, appcast, cask
+Configuration/release/release.sh 1.1.0 --publish  # tag, GitHub release, Homebrew tap
+```
+
+The script uses your `gh` login and the Sparkle EdDSA key stored in your Keychain under the account `perch` (created with Sparkle's `generate_keys --account perch`). Back that key up: without it, existing installs can't verify future updates. The appcast is attached to each GitHub release, and the app reads it from `releases/latest/download/appcast.xml`.
 
 ## Staying in sync with upstream
 
