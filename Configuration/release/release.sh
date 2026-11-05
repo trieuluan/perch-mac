@@ -39,14 +39,16 @@ fi
 step "Building Perch $VERSION (build $BUILD_NUMBER), signed ad-hoc"
 # Command-line settings outrank Configuration/Local.xcconfig, so releases are
 # always ad-hoc even on a machine set up with a personal team.
-xcodebuild -project boringNotch.xcodeproj -scheme boringNotch -configuration Release \
+if ! xcodebuild -project boringNotch.xcodeproj -scheme boringNotch -configuration Release \
   -destination "generic/platform=macOS" -derivedDataPath "$DERIVED" \
   MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
   CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= \
-  build | grep -E "error:|warning: .*Perch|BUILD (SUCCEEDED|FAILED)" || true
+  build | grep -E "error:|warning: .*Perch|BUILD (SUCCEEDED|FAILED)"; then
+  die "xcodebuild failed"
+fi
 APP="$DERIVED/Build/Products/Release/Perch.app"
 [[ -d "$APP" ]] || die "build failed, no Perch.app"
-codesign --verify --deep --strict "$APP" || die "app signature does not verify"
+bash Configuration/release/sign_adhoc.sh "$APP"
 
 SPARKLE_BIN="$DERIVED/SourcePackages/artifacts/sparkle/Sparkle/bin"
 [[ -x "$SPARKLE_BIN/sign_update" ]] || die "Sparkle tools not found in $SPARKLE_BIN"
