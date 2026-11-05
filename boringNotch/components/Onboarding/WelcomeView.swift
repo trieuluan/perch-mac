@@ -62,10 +62,10 @@ struct WelcomeView: View {
                 .padding(.top)
             }
             
-            Image("theboringteam")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(height: 22)
+            // Perch: credit the project it's built on instead of its team logo.
+            Text("Built on Boring Notch by TheBoredTeam")
+                .font(.caption)
+                .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                 .padding()
                 .padding(.bottom, 36)
