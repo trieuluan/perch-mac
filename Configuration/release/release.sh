@@ -95,10 +95,10 @@ echo "Cask:    $OUT/perch.rb"
 step "Tagging and creating the GitHub release"
 git tag -a "v$VERSION" -m "Perch $VERSION"
 git push origin "v$VERSION"
-PRERELEASE=()
-[[ "$VERSION" == *-* ]] && PRERELEASE=(--prerelease)
+PRERELEASE_FLAG=""
+[[ "$VERSION" == *-* ]] && PRERELEASE_FLAG="--prerelease"
 gh release create "v$VERSION" -R "$REPO" "$DMG" "$OUT/appcast.xml" \
-  --title "Perch $VERSION" --generate-notes "${PRERELEASE[@]}"
+  --title "Perch $VERSION" --generate-notes $PRERELEASE_FLAG
 
 step "Updating the Homebrew tap ($TAP_REPO)"
 TAP_DIR="$(mktemp -d)"
