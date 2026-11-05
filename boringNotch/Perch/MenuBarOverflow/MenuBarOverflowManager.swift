@@ -26,6 +26,14 @@ struct MenuBarOverflowItem: Identifiable {
     let appIcon: NSImage?
     /// What the item really looks like in the menu bar (needs Screen Recording).
     var image: NSImage?
+    /// A readable name for built-in macOS items Accessibility doesn't expose
+    /// (e.g. "Screen Mirroring"), from their status window's name.
+    var systemName: String? = nil
+
+    /// What to call the item in the list.
+    var displayName: String {
+        appName ?? systemName ?? String(localized: "Menu item")
+    }
 
     var id: String {
         if let windowID { return "w\(windowID)" }
@@ -49,7 +57,7 @@ final class MenuBarOverflowManager: ObservableObject {
     /// False until Perch has Screen Recording access; items then show app icons.
     @Published private(set) var showsRealIcons = MenuBarItemWindows.canCapture
     /// Set briefly when an item couldn't be opened from Perch.
-    @Published private(set) var unreachableItemID: String?
+    @Published private(set) var unreachableItem: MenuBarOverflowItem?
 
     private init() {}
 
@@ -89,7 +97,7 @@ final class MenuBarOverflowManager: ObservableObject {
         // Windows nobody claimed: items Accessibility doesn't expose.
         items += windows.map { window in
             MenuBarOverflowItem(pid: nil, axIndex: nil, windowID: window.id, title: "", frame: window.frame,
-                                appName: nil, appIcon: nil)
+                                appName: nil, appIcon: nil, systemName: Self.systemItemName(window.name))
         }
 
         items.sort { $0.frame.minX < $1.frame.minX }
@@ -113,9 +121,9 @@ final class MenuBarOverflowManager: ObservableObject {
         guard item.axIndex != nil else {
             // Accessibility doesn't expose this item, and a click can't reach an
             // item the notch hides, so explain instead of doing nothing.
-            unreachableItemID = item.id
-            try? await Task.sleep(for: .seconds(4))
-            if unreachableItemID == item.id { unreachableItemID = nil }
+            unreachableItem = item
+            try? await Task.sleep(for: .seconds(6))
+            if unreachableItem?.id == item.id { unreachableItem = nil }
             return
         }
         if let pid = item.pid {
@@ -124,6 +132,22 @@ final class MenuBarOverflowManager: ObservableObject {
     }
 
     // MARK: - Helpers
+
+    /// Readable names for macOS's own menu bar items, keyed by (part of) their
+    /// status window name. Third-party items show up as "Item-0" and stay unnamed.
+    private static func systemItemName(_ windowName: String) -> String? {
+        let known: [(String, String)] = [
+            ("ScreenMirroring", "Screen Mirroring"), ("AirPlay", "Screen Mirroring"),
+            ("Display", "Display"), ("Sound", "Sound"), ("NowPlaying", "Now Playing"),
+            ("WiFi", "Wi-Fi"), ("Bluetooth", "Bluetooth"), ("Battery", "Battery"),
+            ("FocusModes", "Focus"), ("vpn", "VPN"), ("Siri", "Siri"), ("Spotlight", "Spotlight"),
+            ("KeyboardBrightness", "Keyboard Brightness"), ("AccessibilityShortcuts", "Accessibility Shortcuts"),
+            ("UserSwitcher", "Fast User Switching"), ("TimeMachine", "Time Machine"),
+            ("TextInput", "Input Sources"), ("Hearing", "Hearing"), ("StageManager", "Stage Manager"),
+            ("BentoBox", "Control Center"), ("Clock", "Clock"),
+        ]
+        return known.first { windowName.localizedCaseInsensitiveContains($0.0) }?.1
+    }
 
     private func loadImages() async {
         showsRealIcons = MenuBarItemWindows.canCapture

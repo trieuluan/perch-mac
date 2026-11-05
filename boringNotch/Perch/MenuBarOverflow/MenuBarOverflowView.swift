@@ -37,12 +37,8 @@ struct MenuBarOverflowView: View {
     private var itemList: some View {
         VStack(spacing: 6) {
             items
-            if manager.unreachableItemID != nil {
-                Text("Perch can't open this item while the notch hides it. Make room in the menu bar to reach it.")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.gray)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 20)
+            if let item = manager.unreachableItem {
+                UnreachableItemHint(item: item)
                     .transition(.opacity)
             } else if !manager.showsRealIcons {
                 Button {
@@ -98,7 +94,7 @@ private struct MenuBarOverflowItemButton: View {
     let action: () -> Void
     @State private var isHovering = false
 
-    private var name: String { item.appName ?? String(localized: "Menu item") }
+    private var name: String { item.displayName }
 
     var body: some View {
         Button(action: action) {
@@ -148,5 +144,28 @@ private struct MenuBarOverflowItemButton: View {
                 .frame(width: 22, height: 22)
                 .foregroundStyle(.gray)
         }
+    }
+}
+
+/// Explains why an item can't be opened from Perch and how to reach it.
+private struct UnreachableItemHint: View {
+    let item: MenuBarOverflowItem
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "info.circle")
+                .foregroundStyle(.gray)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("macOS doesn't let Perch open \(item.systemName ?? String(localized: "this item")) while the notch hides it.")
+                    .foregroundStyle(.white.opacity(0.85))
+                Text(item.systemName != nil
+                     ? "Hide it in System Settings › Control Center, or ⌘-drag less-used icons off the menu bar to make room."
+                     : "⌘-drag less-used icons off the menu bar to make room for it.")
+                    .foregroundStyle(.gray)
+            }
+        }
+        .font(.system(size: 11))
+        .padding(.horizontal, 20)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
