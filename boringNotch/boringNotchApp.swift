@@ -438,7 +438,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         previousScreens = NSScreen.screens
-        LaunchGreeting.shared.showIfEnabled() // Perch
+        PerchLiveActivity.shared.greetIfEnabled() // Perch
+        SystemStatsMonitor.shared.start() // Perch
     }
 
     func playWelcomeSound() {

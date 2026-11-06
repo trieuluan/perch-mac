@@ -26,5 +26,7 @@ import Foundation
     func menuBarItems(with reply: @escaping (Data?) -> Void)
     /// Performs AXPress on the `index`-th menu bar item of the app with `pid`.
     func pressMenuBarItem(_ pid: Int32, index: Int, with reply: @escaping (Bool) -> Void)
+    // Perch: name of the process using the most CPU right now (sampled over ~0.5s).
+    func topCPUProcessName(with reply: @escaping (String?) -> Void)
 }
 

@@ -20,6 +20,9 @@ var tabs: [TabModel] {
     if Defaults[.boringShelf] {
         result.append(TabModel(label: "Shelf", icon: "tray.fill", view: .shelf))
     }
+    if Defaults[.systemStatsTab] {
+        result.append(TabModel(label: "System", icon: "gauge.with.dots.needle.33percent", view: .system))
+    }
     if Defaults[.menuBarOverflow] {
         result.append(TabModel(label: "Menu Bar", icon: "menubar.rectangle", view: .menuBar))
     }

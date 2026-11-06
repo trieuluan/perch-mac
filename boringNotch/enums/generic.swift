@@ -28,6 +28,7 @@ public enum NotchViews {
     case home
     case shelf
     case menuBar // Perch: menu bar icons hidden by the notch
+    case system // Perch: CPU, memory, network, battery
 }
 
 enum SettingsEnum {

@@ -170,6 +170,12 @@ struct GeneralSettings: View {
                 Defaults.Toggle(key: .launchGreeting) {
                     Text("Greet me in the notch when Perch starts")
                 }
+                Defaults.Toggle(key: .systemStatsTab) {
+                    Text("Show the System tab (CPU, memory, network, battery)")
+                }
+                Defaults.Toggle(key: .systemStatsAlerts) {
+                    Text("Alert me in the notch when the Mac is overloaded")
+                }
                 LaunchAtLogin.Toggle("Launch at login")
                 Defaults.Toggle(key: .showOnAllDisplays) {
                     Text("Show on all displays")

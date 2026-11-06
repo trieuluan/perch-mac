@@ -34,7 +34,7 @@ struct ContentView: View {
     @Namespace var albumArtNamespace
 
     @Default(.useMusicVisualizer) var useMusicVisualizer
-    @ObservedObject private var launchGreeting = LaunchGreeting.shared // Perch
+    @ObservedObject private var liveActivity = PerchLiveActivity.shared // Perch
 
     @Default(.showNotHumanFace) var showNotHumanFace
 
@@ -261,10 +261,12 @@ struct ContentView: View {
                     .padding(.top, 40)
                     Spacer()
                 } else {
-                    if launchGreeting.isShowing && vm.notchState == .closed && !vm.hideOnClosed {
-                        // Perch: brief "running" greeting right after launch.
-                        LaunchGreetingView(notchWidth: vm.closedNotchSize.width,
-                                           notchHeight: vm.effectiveClosedNotchHeight)
+                    if let activity = liveActivity.current, vm.notchState == .closed, !vm.hideOnClosed {
+                        // Perch: short live activities (launch greeting, overload alerts).
+                        PerchLiveActivityView(activity: activity,
+                                              notchWidth: vm.closedNotchSize.width,
+                                              notchHeight: vm.effectiveClosedNotchHeight)
+                            .id(activity)
                             .transition(.blurReplace)
                     } else if coordinator.expandingView.type == .battery && coordinator.expandingView.show
                         && vm.notchState == .closed && Defaults[.showPowerStatusNotifications]
@@ -360,6 +362,8 @@ struct ContentView: View {
                         ShelfView()
                     case .menuBar:
                         MenuBarOverflowView()
+                    case .system:
+                        SystemStatsView()
                     }
                 }
                 .transition(

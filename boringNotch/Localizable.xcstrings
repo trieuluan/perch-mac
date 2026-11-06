@@ -25769,6 +25769,106 @@
           }
         }
       }
+    },
+    "Memory" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bộ nhớ"
+          }
+        }
+      }
+    },
+    "Network" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mạng"
+          }
+        }
+      }
+    },
+    "of %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "trên %@"
+          }
+        }
+      }
+    },
+    "Full in %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đầy sau %@"
+          }
+        }
+      }
+    },
+    "Plugged in" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang cắm sạc"
+          }
+        }
+      }
+    },
+    "%@ left" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Còn %@"
+          }
+        }
+      }
+    },
+    "Health %lld%%" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Độ chai: còn %lld%%"
+          }
+        }
+      }
+    },
+    "Memory is almost full" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bộ nhớ sắp đầy"
+          }
+        }
+      }
+    },
+    "Show the System tab (CPU, memory, network, battery)" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hiện tab Hệ thống (CPU, bộ nhớ, mạng, pin)"
+          }
+        }
+      }
+    },
+    "Alert me in the notch when the Mac is overloaded" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Báo trên notch khi máy quá tải"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

@@ -260,6 +260,22 @@ final class XPCHelperClient: NSObject {
         }
     }
 
+    /// Display name of the app or process using the most CPU, if the helper can tell.
+    nonisolated func topCPUProcessName() async -> String? {
+        do {
+            let service = await MainActor.run {
+                ensureRemoteService()
+            }
+            return try await service.withContinuation { service, continuation in
+                service.topCPUProcessName { name in
+                    continuation.resume(returning: name)
+                }
+            }
+        } catch {
+            return nil
+        }
+    }
+
     nonisolated func pressMenuBarItem(pid: Int32, index: Int) async -> Bool {
         do {
             let service = await MainActor.run {
