@@ -34,6 +34,9 @@ if [[ "$PUBLISH" == "--publish" ]]; then
   [[ -z "$(git status --porcelain)" ]] || die "commit your changes before publishing"
   command -v gh >/dev/null || die "the GitHub CLI (gh) is required to publish"
   git rev-parse "v$VERSION" >/dev/null 2>&1 && die "tag v$VERSION already exists"
+  # Keep the version Xcode dev builds show (and Sparkle compares) in step with releases.
+  grep -q "MARKETING_VERSION = $VERSION;" boringNotch.xcodeproj/project.pbxproj \
+    || die "set MARKETING_VERSION to $VERSION in the project (and commit) before publishing"
 fi
 
 step "Building Perch $VERSION (build $BUILD_NUMBER), signed ad-hoc"

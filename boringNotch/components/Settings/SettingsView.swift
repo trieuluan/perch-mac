@@ -882,13 +882,21 @@ struct About: View {
     var body: some View {
         VStack {
             Form {
+                // Perch: app identity instead of Boring Notch's release name
                 Section {
-                    HStack {
-                        Text("Release name")
+                    HStack(spacing: 14) {
+                        Image(nsImage: NSApp.applicationIconImage)
+                            .resizable()
+                            .frame(width: 64, height: 64)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Perch")
+                                .font(.title2.weight(.semibold))
+                            Text("A hub for your MacBook's notch")
+                                .foregroundStyle(.secondary)
+                        }
                         Spacer()
-                        Text(Defaults[.releaseName])
-                            .foregroundStyle(.secondary)
                     }
+                    .padding(.vertical, 4)
                     HStack {
                         Text("Version")
                         Spacer()
@@ -899,6 +907,7 @@ struct About: View {
                         Text(Bundle.main.releaseVersionNumber ?? "unkown")
                             .foregroundStyle(.secondary)
                     }
+                    .contentShape(Rectangle())
                     .onTapGesture {
                         withAnimation {
                             showBuildNumber.toggle()
@@ -932,7 +941,10 @@ struct About: View {
             }
             VStack(spacing: 0) {
                 Divider()
-                Text("Made with 🫶🏻 by not so boring not.people")
+                // Perch: credit the project Perch is forked from
+                Link(destination: URL(string: "https://github.com/TheBoredTeam/boring.notch")!) {
+                    Text("Built on Boring Notch by TheBoredTeam")
+                }
                     .foregroundStyle(.secondary)
                     .padding(.top, 5)
                     .padding(.bottom, 7)
