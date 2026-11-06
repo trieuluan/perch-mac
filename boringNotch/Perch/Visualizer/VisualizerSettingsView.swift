@@ -20,6 +20,9 @@ struct VisualizerSettingsView: View {
     var body: some View {
         Form {
             Section {
+                Defaults.Toggle(key: .closedNotchBars) {
+                    Text("Bars next to the album art")
+                }
                 Picker("Player background", selection: $playerBackground) {
                     ForEach(PlayerBackgroundStyle.allCases) { style in
                         Text(style.title).tag(style)
@@ -70,7 +73,7 @@ struct VisualizerSettingsView: View {
                 .pickerStyle(.segmented)
                 .onChange(of: colorMode) { _, mode in
                     // Album art colors are only computed while this upstream option is on.
-                    if mode == .albumArt { Defaults[.coloredSpectrogram] = true }
+                    VisualizerPalette.syncUpstreamColorSetting()
                 }
 
                 if colorMode == .custom {

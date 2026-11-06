@@ -44,7 +44,6 @@ final class SystemStatsMonitor: ObservableObject {
     private var previousTicks: [UInt32]?
     private var previousNetwork: (bytesIn: UInt64, bytesOut: UInt64, time: Date)?
     private var pressureSource: DispatchSourceMemoryPressure?
-    private var highCPUSince: Date?
     private var lastAlert: Date = .distantPast
 
     private init() {}
@@ -109,24 +108,34 @@ final class SystemStatsMonitor: ObservableObject {
 
     // MARK: - Alerts
 
+    /// Overloaded = the last ~20 seconds averaged above 80%, with no sample
+    /// below 60%. Averaging tolerates the brief dips that a strict "above 85%
+    /// every sample" rule kept resetting on.
     private func checkCPUAlert(now: Date) {
-        guard cpu > 0.85 else {
-            highCPUSince = nil
-            return
-        }
-        if highCPUSince == nil { highCPUSince = now }
-        guard let since = highCPUSince, now.timeIntervalSince(since) >= 20 else { return }
-        highCPUSince = nil
+        let window = Int(20 / Self.interval)
+        guard cpuHistory.count >= window else { return }
+        let recent = cpuHistory.suffix(window)
+        let average = recent.reduce(0, +) / Double(window)
+        guard average > 0.8, (recent.min() ?? 0) > 0.6 else { return }
         guard Defaults[.systemStatsAlerts], now.timeIntervalSince(lastAlert) > 300 else { return }
         lastAlert = now
 
+        let percent = Int((average * 100).rounded())
+        Task { await showCPUAlert(percent: percent) }
+    }
+
+    /// Shows the CPU alert right away with the current reading (Settings preview).
+    func previewAlert() {
         let percent = Int((cpu * 100).rounded())
-        Task {
-            let top = await XPCHelperClient.shared.topCPUProcessName()
-            PerchLiveActivity.shared.show(
-                .init(symbol: "cpu", tint: .orange,
-                      text: top.map { "CPU \(percent)% · \($0)" } ?? "CPU \(percent)%"))
-        }
+        Task { await showCPUAlert(percent: percent) }
+    }
+
+    private func showCPUAlert(percent: Int) async {
+        let top = await XPCHelperClient.shared.topCPUProcessName()
+        PerchLiveActivity.shared.show(
+            .init(symbol: "cpu", tint: .orange,
+                  text: top.map { "CPU \(percent)% · \($0)" } ?? "CPU \(percent)%"),
+            for: 4)
     }
 
     private func alertMemory() {

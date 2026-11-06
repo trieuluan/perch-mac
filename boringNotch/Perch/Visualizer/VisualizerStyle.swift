@@ -88,6 +88,8 @@ struct GradientPreset: Identifiable {
 }
 
 extension Defaults.Keys {
+    /// The small bars beside the album art in the closed notch.
+    static let closedNotchBars = Key<Bool>("perchClosedNotchBars", default: true)
     static let visualizerColorMode = Key<VisualizerColorMode>("perchVisualizerColorMode", default: .albumArt)
     static let visualizerGradient = Key<[String]>("perchVisualizerGradient", default: GradientPreset.all[0].colors)
     static let playerBackground = Key<PlayerBackgroundStyle>("perchPlayerBackground", default: .particles)
@@ -95,6 +97,13 @@ extension Defaults.Keys {
 
 /// Resolves the colors every visualizer should use right now.
 enum VisualizerPalette {
+    /// Upstream's "Colored spectrogram" setting (no longer shown) also tints the
+    /// Sneak Peek artist name and gates album-art color sampling. Keep it in step
+    /// with Perch's color mode. Call at launch and when the mode changes.
+    static func syncUpstreamColorSetting() {
+        Defaults[.coloredSpectrogram] = Defaults[.visualizerColorMode] == .albumArt
+    }
+
     /// Colors from left to right (or bottom to top), already shifted by how
     /// bright the music sounds right now.
     @MainActor

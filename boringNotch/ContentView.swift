@@ -35,6 +35,7 @@ struct ContentView: View {
 
     @Default(.useMusicVisualizer) var useMusicVisualizer
     @ObservedObject private var liveActivity = PerchLiveActivity.shared // Perch
+    @Default(.closedNotchBars) private var closedNotchBars // Perch
 
     @Default(.showNotHumanFace) var showNotHumanFace
 
@@ -464,7 +465,10 @@ struct ContentView: View {
                 )
 
             HStack {
-                if useMusicVisualizer {
+                if !closedNotchBars {
+                    // Perch: bars turned off in Settings › Visualizer.
+                    Color.clear
+                } else if useMusicVisualizer {
                     Rectangle()
                         .fill(VisualizerPalette.vertical(albumArt: musicManager.avgColor)) // Perch: shared palette
                         .frame(width: 50, alignment: .center)
