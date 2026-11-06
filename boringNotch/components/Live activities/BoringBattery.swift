@@ -197,6 +197,8 @@ struct BoringBatteryView: View {
                     Text("\(Int32(levelBattery))%")
                         .font(.callout)
                         .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .fixedSize() // Perch: never wrap "96%" when the header is crowded
                 }
                 BatteryView(
                     levelBattery: levelBattery,

@@ -443,6 +443,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         VisualizerPalette.syncUpstreamColorSetting() // Perch
         InputSourceMonitor.shared.start() // Perch
         AudioOutputManager.shared.start() // Perch
+        MeetingReminder.shared.start() // Perch
     }
 
     func playWelcomeSound() {

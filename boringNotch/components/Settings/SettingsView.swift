@@ -141,6 +141,8 @@ struct GeneralSettings: View {
     @ObservedObject var coordinator = BoringViewCoordinator.shared
 
     @Default(.mirrorShape) var mirrorShape
+    @Default(.meetingAlerts) var meetingAlerts
+    @Default(.meetingAlertLead) var meetingAlertLead
     @Default(.showEmojis) var showEmojis
     @Default(.gestureSensitivity) var gestureSensitivity
     @Default(.minimumHoverDuration) var minimumHoverDuration
@@ -187,6 +189,18 @@ struct GeneralSettings: View {
                 }
                 Defaults.Toggle(key: .headphonesAlerts) {
                     Text("Show when headphones connect, with battery")
+                }
+                Defaults.Toggle(key: .meetingAlerts) {
+                    Text("Remind me of upcoming events in the notch")
+                }
+                Picker("Remind me before", selection: $meetingAlertLead) {
+                    ForEach([1, 5, 10, 15], id: \.self) { minutes in
+                        Text("\(minutes) min").tag(minutes)
+                    }
+                }
+                .disabled(!meetingAlerts)
+                Button("Preview event reminder") {
+                    MeetingReminder.shared.showPreview()
                 }
                 LaunchAtLogin.Toggle("Launch at login")
                 Defaults.Toggle(key: .showOnAllDisplays) {
@@ -1192,6 +1206,8 @@ struct Appearance: View {
 
     @ObservedObject var coordinator = BoringViewCoordinator.shared
     @Default(.mirrorShape) var mirrorShape
+    @Default(.meetingAlerts) var meetingAlerts
+    @Default(.meetingAlertLead) var meetingAlertLead
     @Default(.sliderColor) var sliderColor
     @Default(.useMusicVisualizer) var useMusicVisualizer
     @Default(.customVisualizers) var customVisualizers
