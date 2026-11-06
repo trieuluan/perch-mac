@@ -272,6 +272,8 @@ struct MusicControlsView: View {
             HoverButton(icon: "goforward.15", scale: .medium) {
                 MusicManager.shared.skip(seconds: 15)
             }
+        case .audioOutput:
+            AudioOutputButton() // Perch
         case .none:
             Color.clear.frame(height: 1)
         }

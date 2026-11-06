@@ -276,6 +276,22 @@ final class XPCHelperClient: NSObject {
         }
     }
 
+    /// Battery summary for a connected Bluetooth device, if System Information reports one.
+    nonisolated func bluetoothBattery(deviceName: String) async -> String? {
+        do {
+            let service = await MainActor.run {
+                ensureRemoteService()
+            }
+            return try await service.withContinuation { service, continuation in
+                service.bluetoothBattery(forDeviceNamed: deviceName) { battery in
+                    continuation.resume(returning: battery)
+                }
+            }
+        } catch {
+            return nil
+        }
+    }
+
     nonisolated func pressMenuBarItem(pid: Int32, index: Int) async -> Bool {
         do {
             let service = await MainActor.run {

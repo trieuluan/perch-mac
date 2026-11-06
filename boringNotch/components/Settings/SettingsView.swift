@@ -179,6 +179,15 @@ struct GeneralSettings: View {
                 Button("Preview overload alert") {
                     SystemStatsMonitor.shared.previewAlert()
                 }
+                Defaults.Toggle(key: .inputSourceAlerts) {
+                    Text("Show keyboard input source changes in the notch")
+                }
+                Defaults.Toggle(key: .capsLockAlerts) {
+                    Text("Show Caps Lock in the notch")
+                }
+                Defaults.Toggle(key: .headphonesAlerts) {
+                    Text("Show when headphones connect, with battery")
+                }
                 LaunchAtLogin.Toggle("Launch at login")
                 Defaults.Toggle(key: .showOnAllDisplays) {
                     Text("Show on all displays")

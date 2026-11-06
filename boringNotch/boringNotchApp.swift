@@ -441,6 +441,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         PerchLiveActivity.shared.greetIfEnabled() // Perch
         SystemStatsMonitor.shared.start() // Perch
         VisualizerPalette.syncUpstreamColorSetting() // Perch
+        InputSourceMonitor.shared.start() // Perch
+        AudioOutputManager.shared.start() // Perch
     }
 
     func playWelcomeSound() {

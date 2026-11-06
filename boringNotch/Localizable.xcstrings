@@ -25890,6 +25890,96 @@
           }
         }
       }
+    },
+    "Caps Lock on" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Caps Lock đang bật"
+          }
+        }
+      }
+    },
+    "Caps Lock off" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Caps Lock đã tắt"
+          }
+        }
+      }
+    },
+    "%@ connected" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã kết nối %@"
+          }
+        }
+      }
+    },
+    "Playing on %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang phát trên %@"
+          }
+        }
+      }
+    },
+    "Audio output" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thiết bị phát"
+          }
+        }
+      }
+    },
+    "Show keyboard input source changes in the notch" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Báo trên notch khi đổi bộ gõ"
+          }
+        }
+      }
+    },
+    "Show Caps Lock in the notch" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Báo Caps Lock trên notch"
+          }
+        }
+      }
+    },
+    "Show when headphones connect, with battery" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Báo khi tai nghe kết nối, kèm pin"
+          }
+        }
+      }
+    },
+    "No audio outputs" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không có thiết bị phát"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

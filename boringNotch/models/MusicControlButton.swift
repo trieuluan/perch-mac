@@ -17,6 +17,7 @@ enum MusicControlButton: String, CaseIterable, Identifiable, Codable, Defaults.S
     case favorite
     case goBackward
     case goForward
+    case audioOutput // Perch: pick the audio output device
     case none
 
     var id: String { rawValue }
@@ -41,7 +42,8 @@ enum MusicControlButton: String, CaseIterable, Identifiable, Codable, Defaults.S
         .favorite,
         .volume,
         .goBackward,
-        .goForward
+        .goForward,
+        .audioOutput
     ]
 
     var label: String {
@@ -64,6 +66,8 @@ enum MusicControlButton: String, CaseIterable, Identifiable, Codable, Defaults.S
             return "Backward 15s"
         case .goForward:
             return "Forward 15s"
+        case .audioOutput:
+            return "Audio output"
         case .none:
             return "Empty slot"
         }
@@ -89,6 +93,8 @@ enum MusicControlButton: String, CaseIterable, Identifiable, Codable, Defaults.S
             return "gobackward.15"
         case .goForward:
             return "goforward.15"
+        case .audioOutput:
+            return "airplayaudio"
         case .none:
             return ""
         }
