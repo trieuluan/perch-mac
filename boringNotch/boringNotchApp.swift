@@ -444,6 +444,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         InputSourceMonitor.shared.start() // Perch
         AudioOutputManager.shared.start() // Perch
         MeetingReminder.shared.start() // Perch
+        PerchLyrics.start() // Perch
     }
 
     func playWelcomeSound() {

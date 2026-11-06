@@ -233,7 +233,9 @@ class MusicManager: ObservableObject {
             }
 
             // Fetch lyrics on content change
-            self.fetchLyricsIfAvailable(bundleIdentifier: state.bundleIdentifier, title: state.title, artist: state.artist)
+            // Perch: synced-lyrics lookup that handles Vietnamese and YouTube titles.
+            PerchLyrics.load(into: self, bundleIdentifier: state.bundleIdentifier, title: state.title,
+                             artist: state.artist, album: state.album, duration: state.duration)
         }
 
         let timeChanged = state.currentTime != self.elapsedTime

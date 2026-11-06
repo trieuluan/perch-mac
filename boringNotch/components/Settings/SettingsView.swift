@@ -723,11 +723,13 @@ struct Media: View {
             Section {
                 MusicSlotConfigurationView()
                 Defaults.Toggle(key: .enableLyrics) {
-                    HStack {
-                        Text("Show lyrics below artist name")
-                        customBadge(text: "Beta")
-                    }
+                    // Perch: lyrics live on the player's second page.
+                    Text("Show lyrics (swipe the player with two fingers)")
                 }
+                Defaults.Toggle(key: .closedNotchLyrics) {
+                    Text("Show the current lyric line under the closed notch")
+                }
+                .disabled(!enableLyrics)
             } header: {
                 Text("Media controls")
             }  footer: {

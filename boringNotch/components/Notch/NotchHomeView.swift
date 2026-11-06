@@ -19,7 +19,11 @@ struct MusicPlayerView: View {
     var body: some View {
         HStack {
             AlbumArtView(vm: vm, albumArtNamespace: albumArtNamespace).padding(.all, 5)
-            MusicControlsView().drawingGroup().compositingGroup()
+            // Perch: swipe between controls and lyrics. The pager stays outside
+            // drawingGroup, which can't render scroll views.
+            PlayerPager {
+                MusicControlsView().drawingGroup().compositingGroup()
+            }
         }
     }
 }
@@ -153,7 +157,7 @@ struct MusicControlsView: View {
                 frameWidth: width
             )
             .fontWeight(.medium)
-            if Defaults[.enableLyrics] {
+            if Defaults[.enableLyrics] && false { // Perch: replaced by the lyrics page
                 TimelineView(.animation(minimumInterval: 0.25)) { timeline in
                     let currentElapsed: Double = {
                         guard musicManager.isPlaying else { return musicManager.elapsedTime }
@@ -164,7 +168,7 @@ struct MusicControlsView: View {
                     let line: String = {
                         if musicManager.isFetchingLyrics { return "Loading lyrics…" }
                         if !musicManager.syncedLyrics.isEmpty {
-                            return musicManager.lyricLine(at: currentElapsed)
+                            return musicManager.lyricLine(at: currentElapsed - LyricsClock.shared.offset) // Perch: timing offset
                         }
                         let trimmed = musicManager.currentLyrics.trimmingCharacters(in: .whitespacesAndNewlines)
                         return trimmed.isEmpty ? "No lyrics found" : trimmed.replacingOccurrences(of: "\n", with: " ")

@@ -82,6 +82,14 @@ struct ContentView: View {
         return chinWidth
     }
 
+    // Perch
+    private var showsClosedNotchLyrics: Bool {
+        vm.notchState == .closed && !vm.hideOnClosed && musicManager.isPlaying
+            && coordinator.musicLiveActivityEnabled && !coordinator.sneakPeek.show
+            && !coordinator.expandingView.show && liveActivity.current == nil
+            && Defaults[.enableLyrics] && Defaults[.closedNotchLyrics] && !musicManager.syncedLyrics.isEmpty
+    }
+
     var body: some View {
         // Calculate scale based on gesture progress only
         let gestureScale: CGFloat = {
@@ -142,12 +150,14 @@ struct ContentView: View {
                     .conditionalModifier(Defaults[.enableGestures]) { view in
                         view
                             .panGesture(direction: .down) { translation, phase in
+                                guard !PerchGestureGuard.pointerInScrollableArea else { return } // Perch
                                 handleDownGesture(translation: translation, phase: phase)
                             }
                     }
                     .conditionalModifier(Defaults[.closeGestureEnabled] && Defaults[.enableGestures]) { view in
                         view
                             .panGesture(direction: .up) { translation, phase in
+                                guard !PerchGestureGuard.pointerInScrollableArea else { return } // Perch
                                 handleUpGesture(translation: translation, phase: phase)
                             }
                     }
@@ -346,6 +356,12 @@ struct ContentView: View {
                                   .padding(.bottom, 10)
                               }
                           }
+                      }
+
+                      // Perch: the current lyric line under the closed notch.
+                      if showsClosedNotchLyrics {
+                          ClosedNotchLyricsView(width: computedChinWidth)
+                              .transition(.opacity.combined(with: .move(edge: .top)))
                       }
                   }
               }

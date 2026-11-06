@@ -13113,6 +13113,16 @@
         }
       }
     },
+    "Looking for lyrics…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang tìm lời bài hát…"
+          }
+        }
+      }
+    },
     "Lottie JSON URL" : {
       "localizations" : {
         "ar" : {
@@ -13427,6 +13437,16 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "低电量模式"
+          }
+        }
+      }
+    },
+    "Lyrics timing. Click to reset." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Canh thời gian lời. Bấm để đặt lại."
           }
         }
       }
@@ -16401,6 +16421,16 @@
         }
       }
     },
+    "No lyrics found for this song" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không tìm thấy lời cho bài này"
+          }
+        }
+      }
+    },
     "No overlay on the menu bar." : {
       "localizations" : {
         "vi" : {
@@ -17861,6 +17891,16 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Pick a Color"
+          }
+        }
+      }
+    },
+    "Play a song to see its lyrics" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phát một bài hát để xem lời"
           }
         }
       }
@@ -19574,6 +19614,17 @@
         }
       }
     },
+    "Reset" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đặt lại"
+          }
+        }
+      }
+    },
     "Reset to Defaults" : {
       "localizations" : {
         "ar" : {
@@ -21198,7 +21249,18 @@
         }
       }
     },
+    "Show lyrics (swipe the player with two fingers)" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hiện lời bài hát (vuốt 2 ngón trên trình phát)"
+          }
+        }
+      }
+    },
     "Show lyrics below artist name" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -21300,6 +21362,26 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Show lyrics below artist name"
+          }
+        }
+      }
+    },
+    "Show lyrics earlier" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hiện lời sớm hơn"
+          }
+        }
+      }
+    },
+    "Show lyrics later" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hiện lời muộn hơn"
           }
         }
       }
@@ -22282,6 +22364,16 @@
         }
       }
     },
+    "Show the current lyric line under the closed notch" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hiện dòng lời đang hát dưới notch đóng"
+          }
+        }
+      }
+    },
     "Show the System tab (CPU, memory, network, battery)" : {
       "localizations" : {
         "vi" : {
@@ -23228,6 +23320,16 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "支持我们"
+          }
+        }
+      }
+    },
+    "Swipe with two fingers to switch between controls and lyrics" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vuốt 2 ngón để chuyển giữa điều khiển và lời bài hát"
           }
         }
       }
