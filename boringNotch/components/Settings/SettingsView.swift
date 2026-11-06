@@ -167,6 +167,9 @@ struct GeneralSettings: View {
                 Defaults.Toggle(key: .menuBarOverflow) {
                     Text("Show menu bar icons hidden by the notch")
                 }
+                Defaults.Toggle(key: .launchGreeting) {
+                    Text("Greet me in the notch when Perch starts")
+                }
                 LaunchAtLogin.Toggle("Launch at login")
                 Defaults.Toggle(key: .showOnAllDisplays) {
                     Text("Show on all displays")

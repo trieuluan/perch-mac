@@ -34,6 +34,7 @@ struct ContentView: View {
     @Namespace var albumArtNamespace
 
     @Default(.useMusicVisualizer) var useMusicVisualizer
+    @ObservedObject private var launchGreeting = LaunchGreeting.shared // Perch
 
     @Default(.showNotHumanFace) var showNotHumanFace
 
@@ -260,7 +261,12 @@ struct ContentView: View {
                     .padding(.top, 40)
                     Spacer()
                 } else {
-                    if coordinator.expandingView.type == .battery && coordinator.expandingView.show
+                    if launchGreeting.isShowing && vm.notchState == .closed && !vm.hideOnClosed {
+                        // Perch: brief "running" greeting right after launch.
+                        LaunchGreetingView(notchWidth: vm.closedNotchSize.width,
+                                           notchHeight: vm.effectiveClosedNotchHeight)
+                            .transition(.blurReplace)
+                    } else if coordinator.expandingView.type == .battery && coordinator.expandingView.show
                         && vm.notchState == .closed && Defaults[.showPowerStatusNotifications]
                     {
                         HStack(spacing: 0) {
