@@ -84,6 +84,9 @@ enum PerchLyrics {
 
         Task {
             var result = await search(title: title, artist: artist, album: album, duration: duration)
+            #if DEBUG
+            if let demo = demoLyrics(title: title) { result = demo }
+            #endif
             if result?.synced.isEmpty ?? true, bundleIdentifier?.contains("com.apple.Music") == true,
                let native = await appleMusicLyrics() {
                 result = Result(plain: native, synced: [])
@@ -318,6 +321,19 @@ enum PerchLyrics {
         }
         return lines.sorted { $0.time < $1.time }
     }
+
+    #if DEBUG
+    /// Debug builds only: lyrics for the README demo track, which LRCLIB doesn't
+    /// have. Put an LRC file at ~/Library/Containers/com.trieuluan.perch/Data/demo-lyrics.lrc
+    /// whose first line is "[ti:<track title>]".
+    private static func demoLyrics(title: String) -> Result? {
+        let path = NSHomeDirectory() + "/demo-lyrics.lrc"
+        guard let lrc = try? String(contentsOfFile: path, encoding: .utf8),
+              lrc.hasPrefix("[ti:\(title)]") else { return nil }
+        let synced = parseLRC(lrc)
+        return synced.isEmpty ? nil : Result(plain: "", synced: synced)
+    }
+    #endif
 
     // MARK: - Apple Music
 

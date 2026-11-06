@@ -5,7 +5,7 @@
 # Perch
 
 **A small hub that lives in your MacBook's notch.**<br>
-Music with visualizers that follow the real audio, system stats, calendar reminders,<br>
+Music with visualizers and synced lyrics, system stats, calendar reminders,<br>
 the menu bar icons the notch hides, and quick alerts, all around the camera.
 
 [![Latest release](https://img.shields.io/github/v/release/trieuluan/perch-mac?label=release&color=7c5cff)](https://github.com/trieuluan/perch-mac/releases/latest)
@@ -28,6 +28,17 @@ the menu bar icons the notch hides, and quick alerts, all around the camera.
 Perch analyzes what your Mac is playing, on-device, and follows 24 frequency bands, the lead melody, drum hits and how bright the sound is. It shows up behind the player (7 styles), next to the album art in the closed notch, and across the menu bar (11 styles), in colors taken from the album art or your own gradient.
 
 <img src="docs/media/menubar-visualizer.gif" width="100%" alt="Visualizer across the menu bar">
+
+### 🎤 Synced lyrics
+
+The line being sung shows under the closed notch, and long lines glide sideways so you can read them to the end. Open the notch and swipe the player with two fingers to see the whole song, karaoke style: click a line to jump there, or nudge the timing when a music video runs early. Lyrics come from [LRCLIB](https://lrclib.net), with Vietnamese titles and YouTube-style names handled.
+
+<table>
+<tr>
+<td width="45%" valign="top"><img src="docs/media/lyrics-closed.gif" alt="Current lyric line under the closed notch, scrolling through a long line"></td>
+<td width="55%" valign="top"><img src="docs/media/lyrics-page.gif" alt="Lyrics page in the player, following the song"></td>
+</tr>
+</table>
 
 ### 🔔 Alerts in the notch
 
@@ -99,6 +110,7 @@ The Homebrew cask does this for you. After that, Perch updates itself.
 Everything can be turned on or off:
 
 - **Settings → Visualizer**: styles for the player background and the menu bar, intensity, and colors (from the album art, monochrome, or your own gradient with presets).
+- **Settings → Media**: lyrics, and the lyric line under the closed notch.
 - **Settings → General**: the Menu Bar and System tabs, each kind of notch alert, and how many minutes before an event to remind you. **Preview** buttons let you try the alerts.
 
 ## Roadmap
@@ -110,6 +122,7 @@ Everything can be turned on or off:
 - [x] System stats and overload alerts
 - [x] Input source, Caps Lock and headphone alerts, audio output picker
 - [x] Event reminders and one-click meeting join
+- [x] Synced lyrics under the notch and in the player
 - [x] Vietnamese translation
 - [ ] Better web music support (Zing MP3, NhacCuaTui, SoundCloud…), with a browser extension for sites that don't report what's playing
 - [ ] Developer ID signing and notarization
